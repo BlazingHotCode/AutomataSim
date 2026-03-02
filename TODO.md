@@ -56,7 +56,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - [x] 2A.1.1 Add types + parser mode.
   - [x] 2A.1.2 Implement epsilon-closure simulation + trace.
   - [x] 2A.1.3 Add renderer support for multiple active states.
-  - [ ] 2A.1.4 Add engine and parser tests.
+  - [x] 2A.1.4 Add engine and parser tests.
   - [x] 2A.1.5 Wire simulation UI (Run + step playback + trace panel).
 - [ ] 2A.2 Implement Pushdown Automaton
   - [ ] 2A.2.1 Add model for stack alphabet and push/pop transitions.
