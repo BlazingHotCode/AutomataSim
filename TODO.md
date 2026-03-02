@@ -127,7 +127,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [x] Add CI checks (build + lint + test) on pull requests.
 - [x] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
 - [x] Add lightweight error boundary for runtime UI crashes.
-- [ ] Split `src/App.tsx` into multiple files/components (graph rendering, simulation controls, import/export logic, and shared state helpers).
+- [x] Split `src/App.tsx` into multiple files/components (graph rendering, simulation controls, import/export logic, and shared state helpers).
 - [ ] Refactor code into modular, reusable units (components, parsing utilities, simulation hooks, shared types).
 
 ## 8. GitHub Pages Deploy Hardening
