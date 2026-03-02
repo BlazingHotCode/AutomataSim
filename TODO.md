@@ -29,12 +29,26 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - 2.3.1 Nondeterministic Finite Automaton support
   - 2.3.2 Pushdown Automaton support
   - 2.3.3 Turing Machine support
-  - 2.3.4 advanced animations
-  - 2.3.5 authentication
-- [ ] Define post-MVP automata expansion plan:
+  - 2.3.4 Queue Automaton support
+  - 2.3.5 advanced animations
+  - 2.3.6 authentication
+- [x] Define post-MVP automata expansion plan:
   - 2.4.1 Nondeterministic Finite Automaton
+    - Phase 1: add Nondeterministic Finite Automaton types + parser mode.
+    - Phase 2: implement epsilon-closure based simulation and trace output.
+    - Phase 3: render multiple active states during simulation.
   - 2.4.2 Pushdown Automaton
+    - Phase 1: extend model with stack alphabet, stack start symbol, and transitions with push/pop actions.
+    - Phase 2: implement step simulation with stack snapshots per step.
+    - Phase 3: add stack visualization panel alongside state graph.
   - 2.4.3 Turing Machine
+    - Phase 1: extend model with tape alphabet, blank symbol, and head move actions (L/R/Stay).
+    - Phase 2: implement bounded execution engine with halt/step limit safeguards.
+    - Phase 3: add tape/head visualization and execution controls.
+  - 2.4.4 Queue Automaton
+    - Phase 1: extend model with queue alphabet and enqueue/dequeue transition actions.
+    - Phase 2: implement deterministic simulation with queue snapshots per step.
+    - Phase 3: add queue visualization panel and playback controls.
 
 ## 3. Data Model and Engine
 
