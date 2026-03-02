@@ -17,20 +17,24 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 2. Scope Definition (MVP)
 
-- [ ] Decide first automaton type to support:
-  - DFA only (recommended for MVP), or
-  - DFA + NFA
-- [ ] Write MVP feature list (short and strict):
+- [x] Decide first automaton type to support:
+  - Deterministic Finite Automaton only for MVP.
+- [x] Write MVP feature list (short and strict):
   - state creation/removal
   - transition creation/removal
-  - start state
-  - accepting states
+  - start state selection
+  - accepting state selection
   - input string simulation
-- [ ] Define out-of-scope items for now (e.g. PDA/TM, advanced animations, auth).
+- [x] Define out-of-scope items for now:
+  - Nondeterministic Finite Automaton support
+  - Pushdown Automaton support
+  - Turing Machine support
+  - advanced animations
+  - authentication
 
 ## 3. Data Model and Engine
 
-- [ ] Create TypeScript types for:
+- [x] Create TypeScript types for:
   - state id/name
   - alphabet symbols
   - transitions
@@ -38,8 +42,8 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - simulation result (accept/reject + trace)
 - [ ] Implement pure logic functions in `src/lib/`:
   - validation (valid start state, transitions, alphabet)
-  - `simulateDFA(automaton, input)`
-  - optional `simulateNFA` (if included in MVP)
+  - `simulateDFA(automaton, input)` for Deterministic Finite Automaton simulation
+  - optional `simulateNFA` for Nondeterministic Finite Automaton simulation (if scope expands)
 - [ ] Add unit tests for engine behavior:
   - accepts valid strings
   - rejects invalid strings
@@ -47,10 +51,10 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 4. Editor UI
 
-- [ ] Build a state list panel (add/remove/rename states).
-- [ ] Build transition editor (from state, symbol, to state).
-- [ ] Add controls for start state and accepting states.
-- [ ] Add alphabet input with validation feedback.
+- [x] Build a text-based automaton definition input panel.
+- [x] Parse text input into a Deterministic Finite Automaton model.
+- [x] Validate text input and show explicit parse/validation errors.
+- [x] Render parsed automaton as a state/transition diagram.
 - [ ] Keep UI state normalized so it maps 1:1 to automaton types.
 
 ## 5. Simulation UI
@@ -86,7 +90,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 ## 9. Immediate Next Actions
 
 - [x] Step 1: Replace starter `App.tsx` with a minimal AutomataSim layout.
-- [ ] Step 2: Create `src/types/automaton.ts`.
+- [x] Step 2: Create `src/types/automaton.ts`.
 - [ ] Step 3: Implement `simulateDFA` in `src/lib/simulateDFA.ts`.
-- [ ] Step 4: Render a basic form to input states/transitions/string.
-- [ ] Step 5: Connect form data to `simulateDFA` and show accept/reject result.
+- [x] Step 4: Render a text-based input to define states/transitions/string.
+- [ ] Step 5: Connect form data to `simulateDFA` and show accept/reject result for the Deterministic Finite Automaton.

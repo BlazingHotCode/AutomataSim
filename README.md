@@ -1,6 +1,6 @@
 # AutomataSim
 
-AutomataSim is a React + TypeScript web app for building and simulating finite automata, starting with DFA-focused workflows.
+AutomataSim is a React + TypeScript web app for defining and visualizing finite automata, starting with Deterministic Finite Automaton workflows through a text-based definition format.
 
 ## Local Development
 
