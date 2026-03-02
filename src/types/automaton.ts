@@ -19,3 +19,24 @@ export interface ParseResult<T> {
   value: T | null
   errors: string[]
 }
+
+export interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
+export interface DeterministicSimulationStep {
+  index: number
+  symbol: SymbolToken
+  fromState: StateId
+  toState: StateId
+}
+
+export interface DeterministicSimulationResult {
+  accepted: boolean
+  inputSymbols: SymbolToken[]
+  startState: StateId
+  finalState: StateId
+  trace: DeterministicSimulationStep[]
+  errors: string[]
+}

@@ -7,47 +7,51 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [x] Confirm local setup works: `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm lint`.
 - [x] Replace starter React/Vite UI in `src/App.tsx` with a clean app shell.
 - [x] Define a minimal folder structure for growth:
-  - `src/components/`
-  - `src/lib/` (automata logic)
-  - `src/types/`
+  - 1.3.1 `src/components/`
+  - 1.3.2 `src/lib/` (automata logic)
+  - 1.3.3 `src/types/`
 - [x] Add core project docs to `README.md`:
-  - what AutomataSim does
-  - how to run locally
-  - how to deploy
+  - 1.4.1 what AutomataSim does
+  - 1.4.2 how to run locally
+  - 1.4.3 how to deploy
 
 ## 2. Scope Definition (MVP)
 
 - [x] Decide first automaton type to support:
-  - Deterministic Finite Automaton only for MVP.
+  - 2.1.1 Deterministic Finite Automaton only for MVP.
 - [x] Write MVP feature list (short and strict):
-  - state creation/removal
-  - transition creation/removal
-  - start state selection
-  - accepting state selection
-  - input string simulation
+  - 2.2.1 state creation/removal
+  - 2.2.2 transition creation/removal
+  - 2.2.3 start state selection
+  - 2.2.4 accepting state selection
+  - 2.2.5 input string simulation
 - [x] Define out-of-scope items for now:
-  - Nondeterministic Finite Automaton support
-  - Pushdown Automaton support
-  - Turing Machine support
-  - advanced animations
-  - authentication
+  - 2.3.1 Nondeterministic Finite Automaton support
+  - 2.3.2 Pushdown Automaton support
+  - 2.3.3 Turing Machine support
+  - 2.3.4 advanced animations
+  - 2.3.5 authentication
+- [ ] Define post-MVP automata expansion plan:
+  - 2.4.1 Nondeterministic Finite Automaton
+  - 2.4.2 Pushdown Automaton
+  - 2.4.3 Turing Machine
 
 ## 3. Data Model and Engine
 
 - [x] Create TypeScript types for:
-  - state id/name
-  - alphabet symbols
-  - transitions
-  - automaton definition
-  - simulation result (accept/reject + trace)
-- [ ] Implement pure logic functions in `src/lib/`:
-  - validation (valid start state, transitions, alphabet)
-  - `simulateDFA(automaton, input)` for Deterministic Finite Automaton simulation
-  - optional `simulateNFA` for Nondeterministic Finite Automaton simulation (if scope expands)
+  - 3.1.1 state id/name
+  - 3.1.2 alphabet symbols
+  - 3.1.3 transitions
+  - 3.1.4 automaton definition
+  - 3.1.5 simulation result (accept/reject + trace)
+- [x] Implement pure logic functions in `src/lib/`:
+  - 3.2.1 validation (valid start state, transitions, alphabet)
+  - 3.2.2 `simulateDFA(automaton, input)` for Deterministic Finite Automaton simulation
+  - 3.2.3 optional `simulateNFA` for Nondeterministic Finite Automaton simulation (deferred until scope expands)
 - [ ] Add unit tests for engine behavior:
-  - accepts valid strings
-  - rejects invalid strings
-  - handles missing transitions safely
+  - 3.3.1 accepts valid strings
+  - 3.3.2 rejects invalid strings
+  - 3.3.3 handles missing transitions safely
 
 ## 4. Editor UI
 
@@ -63,6 +67,11 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [ ] Add input string field and Run button.
 - [ ] Show result clearly: Accept / Reject.
 - [ ] Show step-by-step trace (current state after each symbol).
+- [ ] Add playback controls for simulation walkthrough:
+  - 5.4.1 next step
+  - 5.4.2 previous step
+  - 5.4.3 auto-play
+  - 5.4.4 pause/reset
 - [ ] Add reset/clear actions.
 - [ ] Handle invalid machine configs with explicit error messages.
 
@@ -75,8 +84,8 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 ## 7. Quality and Tooling
 
 - [ ] Add a test runner (Vitest recommended) and scripts:
-  - `test`
-  - `test:watch`
+  - 7.1.1 `test`
+  - 7.1.2 `test:watch`
 - [ ] Add CI checks (build + lint + test) on pull requests.
 - [ ] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
 - [ ] Add lightweight error boundary for runtime UI crashes.
@@ -92,6 +101,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 - [x] Step 1: Replace starter `App.tsx` with a minimal AutomataSim layout.
 - [x] Step 2: Create `src/types/automaton.ts`.
-- [ ] Step 3: Implement `simulateDFA` in `src/lib/simulateDFA.ts`.
+- [x] Step 3: Implement `simulateDFA` in `src/lib/simulateDFA.ts`.
 - [x] Step 4: Render a text-based input to define states/transitions/string.
 - [ ] Step 5: Connect form data to `simulateDFA` and show accept/reject result for the Deterministic Finite Automaton.
+- [ ] Step 6: Add interactive step runner so users can walk through transitions from input start to end.
