@@ -162,6 +162,424 @@ function AutomatonGraph({
 }: AutomatonGraphProps) {
   const positions = getConnectionAwareStatePositions(machine)
   const nodeRadius = 28
+  const transitionGroupsMap = new Map<
+    string,
+    DeterministicFiniteAutomaton['transitions']
+  >()
+  machine.transitions.forEach((transition) => {
+    const groupKey = `${transition.from}|${transition.to}`
+    const existing = transitionGroupsMap.get(groupKey)
+    if (existing) {
+      existing.push(transition)
+      return
+    }
+    transitionGroupsMap.set(groupKey, [transition])
+  })
+  const transitionGroups = Array.from(transitionGroupsMap.entries()).map(
+    ([groupKey, transitions]) => {
+      const [from, to] = groupKey.split('|')
+      return { groupKey, from, to, transitions }
+    },
+  )
+
+  interface Point {
+    x: number
+    y: number
+  }
+
+  interface RoutedEdgePlacement {
+    curveOffset: number
+    labelOffset: number
+  }
+
+  interface SelfLoopPlacement {
+    startX: number
+    startY: number
+    control1X: number
+    control1Y: number
+    control2X: number
+    control2Y: number
+    endX: number
+    endY: number
+    labelX: number
+    labelY: number
+    controlPoint: Point
+    labelPoint: Point
+  }
+
+  interface EdgeGeometry {
+    length: number
+    unitX: number
+    unitY: number
+    startX: number
+    startY: number
+    endX: number
+    endY: number
+  }
+
+  const allStateEntries = machine.states.map((state) => ({
+    state,
+    point: positions[state],
+  }))
+
+  function getEdgeGeometry(fromState: string, toState: string): EdgeGeometry {
+    const from = positions[fromState]
+    const to = positions[toState]
+    const dx = to.x - from.x
+    const dy = to.y - from.y
+    const length = Math.hypot(dx, dy)
+    const unitX = dx / length
+    const unitY = dy / length
+    return {
+      length,
+      unitX,
+      unitY,
+      startX: from.x + unitX * nodeRadius,
+      startY: from.y + unitY * nodeRadius,
+      endX: to.x - unitX * nodeRadius,
+      endY: to.y - unitY * nodeRadius,
+    }
+  }
+
+  function pointDistance(a: Point, b: Point) {
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
+
+  function minDistanceToPoints(point: Point, points: Point[]) {
+    if (points.length === 0) {
+      return 999
+    }
+    return Math.min(...points.map((otherPoint) => pointDistance(point, otherPoint)))
+  }
+
+  function minDistanceToNodeEdges(
+    point: Point,
+    excludedStates: Set<string>,
+    extraPadding = 0,
+  ) {
+    const candidateNodeCenters = allStateEntries
+      .filter((entry) => !excludedStates.has(entry.state))
+      .map((entry) => entry.point)
+    if (candidateNodeCenters.length === 0) {
+      return 999
+    }
+    return (
+      Math.min(
+        ...candidateNodeCenters.map((center) => pointDistance(point, center)),
+      ) -
+      (nodeRadius + extraPadding)
+    )
+  }
+
+  function quadraticPointAt(
+    t: number,
+    start: Point,
+    control: Point,
+    end: Point,
+  ): Point {
+    const oneMinusT = 1 - t
+    return {
+      x:
+        oneMinusT * oneMinusT * start.x +
+        2 * oneMinusT * t * control.x +
+        t * t * end.x,
+      y:
+        oneMinusT * oneMinusT * start.y +
+        2 * oneMinusT * t * control.y +
+        t * t * end.y,
+    }
+  }
+
+  function cubicPointAt(
+    t: number,
+    start: Point,
+    control1: Point,
+    control2: Point,
+    end: Point,
+  ): Point {
+    const oneMinusT = 1 - t
+    return {
+      x:
+        oneMinusT * oneMinusT * oneMinusT * start.x +
+        3 * oneMinusT * oneMinusT * t * control1.x +
+        3 * oneMinusT * t * t * control2.x +
+        t * t * t * end.x,
+      y:
+        oneMinusT * oneMinusT * oneMinusT * start.y +
+        3 * oneMinusT * oneMinusT * t * control1.y +
+        3 * oneMinusT * t * t * control2.y +
+        t * t * t * end.y,
+    }
+  }
+
+  const routedPlacementByGroupKey = new Map<string, RoutedEdgePlacement>()
+  const selfLoopPlacementByGroupKey = new Map<string, SelfLoopPlacement>()
+  const chosenControlPoints: Point[] = []
+  const chosenLabelPoints: Point[] = []
+
+  const selfLoopGroups = transitionGroups.filter((group) => group.from === group.to)
+  const nonSelfGroups = transitionGroups.filter((group) => group.from !== group.to)
+
+  const selfLoopDirectionCandidates = [
+    -Math.PI / 2, // top only
+  ]
+
+  function getSelfLoopCandidatePlacement(
+    group: { from: string; to: string; groupKey: string; transitions: DeterministicFiniteAutomaton['transitions'] },
+    directionAngle: number,
+  ): { placement: SelfLoopPlacement; score: number } {
+    const center = positions[group.from]
+    const radialX = Math.cos(directionAngle)
+    const radialY = Math.sin(directionAngle)
+    const tangentX = -Math.sin(directionAngle)
+    const tangentY = Math.cos(directionAngle)
+    const spread = 12
+    const bulge = nodeRadius + 46
+    const labelDistance = nodeRadius + 62 + Math.max(0, group.transitions.length - 1) * 6
+
+    const start = {
+      x: center.x + radialX * nodeRadius - tangentX * spread,
+      y: center.y + radialY * nodeRadius - tangentY * spread,
+    }
+    const end = {
+      x: center.x + radialX * nodeRadius + tangentX * spread,
+      y: center.y + radialY * nodeRadius + tangentY * spread,
+    }
+    const control1 = {
+      x: center.x + radialX * bulge - tangentX * 32,
+      y: center.y + radialY * bulge - tangentY * 32,
+    }
+    const control2 = {
+      x: center.x + radialX * bulge + tangentX * 32,
+      y: center.y + radialY * bulge + tangentY * 32,
+    }
+    const labelPoint = {
+      x: center.x + radialX * labelDistance,
+      y: center.y + radialY * labelDistance,
+    }
+
+    const sampledCurvePoints = [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((t) =>
+      cubicPointAt(t, start, control1, control2, end),
+    )
+    const minCurveClearanceToNodeEdge = Math.min(
+      ...sampledCurvePoints.map((point) =>
+        minDistanceToNodeEdges(point, new Set([group.from])),
+      ),
+    )
+    const labelClearanceToNodeEdge = minDistanceToNodeEdges(
+      labelPoint,
+      new Set([group.from]),
+      8,
+    )
+    const routeClearance =
+      minDistanceToPoints(control1, chosenControlPoints) +
+      minDistanceToPoints(control2, chosenControlPoints) +
+      minDistanceToPoints(labelPoint, chosenLabelPoints)
+    const score = minCurveClearanceToNodeEdge * 2.2 + labelClearanceToNodeEdge + routeClearance * 1.1
+
+    return {
+      placement: {
+        startX: start.x,
+        startY: start.y,
+        control1X: control1.x,
+        control1Y: control1.y,
+        control2X: control2.x,
+        control2Y: control2.y,
+        endX: end.x,
+        endY: end.y,
+        labelX: labelPoint.x,
+        labelY: labelPoint.y,
+        controlPoint: {
+          x: (control1.x + control2.x) / 2,
+          y: (control1.y + control2.y) / 2,
+        },
+        labelPoint,
+      },
+      score,
+    }
+  }
+
+  selfLoopGroups.forEach((group) => {
+    let best = getSelfLoopCandidatePlacement(group, selfLoopDirectionCandidates[0])
+    selfLoopDirectionCandidates.slice(1).forEach((directionAngle) => {
+      const candidate = getSelfLoopCandidatePlacement(group, directionAngle)
+      if (candidate.score > best.score) {
+        best = candidate
+      }
+    })
+    selfLoopPlacementByGroupKey.set(group.groupKey, best.placement)
+    chosenControlPoints.push(best.placement.controlPoint)
+    chosenLabelPoints.push(best.placement.labelPoint)
+  })
+  function getCandidatePlacement(
+    group: { from: string; to: string; groupKey: string },
+    sign: number,
+    hasReverseDirection: boolean,
+  ) {
+    const geometry = getEdgeGeometry(group.from, group.to)
+    const baseCurveMagnitude = Math.max(20, Math.min(34, geometry.length * 0.13))
+    const pairExtraMagnitude = hasReverseDirection
+      ? Math.max(34, Math.min(58, geometry.length * 0.24))
+      : 0
+    const normalX = -geometry.unitY
+    const normalY = geometry.unitX
+    const excludedStates = new Set([group.from, group.to])
+
+    function evaluateAtCurveMagnitude(curveMagnitude: number) {
+      const curveOffset = sign * curveMagnitude
+      const controlPoint = {
+        x: (geometry.startX + geometry.endX) / 2 + normalX * curveOffset,
+        y: (geometry.startY + geometry.endY) / 2 + normalY * curveOffset,
+      }
+      const labelOffset = sign * Math.max(16, Math.min(30, curveMagnitude * 0.35))
+      const labelPoint = {
+        x:
+          0.25 * geometry.startX +
+          0.5 * controlPoint.x +
+          0.25 * geometry.endX +
+          normalX * labelOffset,
+        y:
+          0.25 * geometry.startY +
+          0.5 * controlPoint.y +
+          0.25 * geometry.endY +
+          normalY * labelOffset,
+      }
+
+      const curvePoints = [0.2, 0.35, 0.5, 0.65, 0.8].map((t) =>
+        quadraticPointAt(
+          t,
+          { x: geometry.startX, y: geometry.startY },
+          controlPoint,
+          { x: geometry.endX, y: geometry.endY },
+        ),
+      )
+      const minCurveClearanceToNodeEdge = Math.min(
+        ...curvePoints.map((point) => minDistanceToNodeEdges(point, excludedStates)),
+      )
+      const labelClearanceToNodeEdge = minDistanceToNodeEdges(
+        labelPoint,
+        excludedStates,
+        8,
+      )
+
+      const stateClearance =
+        minCurveClearanceToNodeEdge * 2.1 + labelClearanceToNodeEdge
+      const routeClearance =
+        minDistanceToPoints(controlPoint, chosenControlPoints) +
+        minDistanceToPoints(labelPoint, chosenLabelPoints)
+      const sizePenalty = curveMagnitude * 0.15
+      const totalScore = stateClearance + routeClearance * 1.2 - sizePenalty
+
+      return {
+        curveOffset,
+        labelOffset,
+        controlPoint,
+        labelPoint,
+        minCurveClearanceToNodeEdge,
+        labelClearanceToNodeEdge,
+        score: totalScore,
+      }
+    }
+
+    let curveMagnitude = baseCurveMagnitude + pairExtraMagnitude
+    let bestCandidate = evaluateAtCurveMagnitude(curveMagnitude)
+
+    // Increase bend until path and label clear node circles adequately,
+    // while still tracking the best-scoring candidate.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const candidate = evaluateAtCurveMagnitude(curveMagnitude)
+      if (candidate.score > bestCandidate.score) {
+        bestCandidate = candidate
+      }
+      if (
+        candidate.minCurveClearanceToNodeEdge >= 8 &&
+        candidate.labelClearanceToNodeEdge >= 10
+      ) {
+        bestCandidate = candidate
+        break
+      }
+      curveMagnitude += 14
+    }
+
+    return {
+      curveOffset: bestCandidate.curveOffset,
+      labelOffset: bestCandidate.labelOffset,
+      controlPoint: bestCandidate.controlPoint,
+      labelPoint: bestCandidate.labelPoint,
+      score: bestCandidate.score,
+    }
+  }
+
+  // Route bidirectional pairs together and single edges greedily.
+  const pairedByUnorderedKey = new Map<
+    string,
+    Array<{ from: string; to: string; groupKey: string }>
+  >()
+  nonSelfGroups.forEach((group) => {
+    const unorderedKey = [group.from, group.to].sort().join('|')
+    const existing = pairedByUnorderedKey.get(unorderedKey)
+    if (existing) {
+      existing.push(group)
+      return
+    }
+    pairedByUnorderedKey.set(unorderedKey, [group])
+  })
+
+  const sortedPairBuckets = Array.from(pairedByUnorderedKey.values()).sort(
+    (a, b) => {
+      const aGeometry = getEdgeGeometry(a[0].from, a[0].to)
+      const bGeometry = getEdgeGeometry(b[0].from, b[0].to)
+      return bGeometry.length - aGeometry.length
+    },
+  )
+
+  sortedPairBuckets.forEach((bucket) => {
+    if (bucket.length === 2) {
+      const [first, second] = bucket
+      const firstPositive = getCandidatePlacement(first, 1, true)
+      const secondNegative = getCandidatePlacement(second, -1, true)
+      const scoreOptionA = firstPositive.score + secondNegative.score
+
+      const firstNegative = getCandidatePlacement(first, -1, true)
+      const secondPositive = getCandidatePlacement(second, 1, true)
+      const scoreOptionB = firstNegative.score + secondPositive.score
+
+      const chosen =
+        scoreOptionA >= scoreOptionB
+          ? [
+              { group: first, placement: firstPositive },
+              { group: second, placement: secondNegative },
+            ]
+          : [
+              { group: first, placement: firstNegative },
+              { group: second, placement: secondPositive },
+            ]
+
+      chosen.forEach(({ group, placement }) => {
+        routedPlacementByGroupKey.set(group.groupKey, {
+          curveOffset: placement.curveOffset,
+          labelOffset: placement.labelOffset,
+        })
+        chosenControlPoints.push(placement.controlPoint)
+        chosenLabelPoints.push(placement.labelPoint)
+      })
+      return
+    }
+
+    const [single] = bucket
+    const candidatePositive = getCandidatePlacement(single, 1, false)
+    const candidateNegative = getCandidatePlacement(single, -1, false)
+    const chosen =
+      candidatePositive.score >= candidateNegative.score
+        ? candidatePositive
+        : candidateNegative
+    routedPlacementByGroupKey.set(single.groupKey, {
+      curveOffset: chosen.curveOffset,
+      labelOffset: chosen.labelOffset,
+    })
+    chosenControlPoints.push(chosen.controlPoint)
+    chosenLabelPoints.push(chosen.labelPoint)
+  })
 
   return (
     <svg viewBox="0 0 720 360" className="automaton-canvas" role="img">
@@ -174,41 +592,62 @@ function AutomatonGraph({
           refY="4"
           orient="auto"
         >
-          <path d="M0,0 L8,4 L0,8 Z" fill="#2e4c76" />
+          <path d="M0,0 L8,4 L0,8 Z" fill="context-stroke" />
         </marker>
       </defs>
 
-      {machine.transitions.map((transition) => {
-        const from = positions[transition.from]
-        const to = positions[transition.to]
-        const isSelfLoop = transition.from === transition.to
-        const transitionKey = `${transition.from}|${transition.symbol}|${transition.to}`
-        const isTraversed = traversedTransitionKeys.has(transitionKey)
-        const isActive = activeTransitionKey === transitionKey
+      {transitionGroups.map((group) => {
+        const from = positions[group.from]
+        const to = positions[group.to]
+        const isSelfLoop = group.from === group.to
+        const transitionKeys = group.transitions.map(
+          (transition) =>
+            `${transition.from}|${transition.symbol}|${transition.to}`,
+        )
+        const isTraversed = transitionKeys.some((key) =>
+          traversedTransitionKeys.has(key),
+        )
+        const isActive = transitionKeys.some((key) => key === activeTransitionKey)
         const strokeColor = isActive ? '#d36b1f' : isTraversed ? '#2f7f4f' : '#2e4c76'
         const textColor = isActive ? '#8d3f08' : isTraversed ? '#1d5b34' : '#10284a'
         const strokeWidth = isActive ? 3 : 2
 
         if (isSelfLoop) {
+          const placement = selfLoopPlacementByGroupKey.get(group.groupKey)
+          if (!placement) {
+            return null
+          }
+
           return (
-            <g key={`${transition.from}-${transition.symbol}-self`}>
+            <g key={group.groupKey}>
               <path
-                d={`M ${from.x - 12} ${from.y - nodeRadius}
-                    C ${from.x - 40} ${from.y - 75},
-                      ${from.x + 40} ${from.y - 75},
-                      ${from.x + 12} ${from.y - nodeRadius}`}
+                d={`M ${placement.startX} ${placement.startY}
+                    C ${placement.control1X} ${placement.control1Y},
+                      ${placement.control2X} ${placement.control2Y},
+                      ${placement.endX} ${placement.endY}`}
                 fill="none"
                 stroke={strokeColor}
                 strokeWidth={strokeWidth}
                 markerEnd="url(#arrow)"
               />
               <text
-                x={from.x}
-                y={from.y - 78}
+                x={placement.labelX}
+                y={placement.labelY}
                 textAnchor="middle"
                 fill={textColor}
+                stroke="#fbfdff"
+                strokeWidth={4}
+                paintOrder="stroke"
               >
-                {transition.symbol}
+                {group.transitions.map((transition, index) => (
+                  <tspan
+                    key={transition.symbol}
+                    x={placement.labelX}
+                    dy={index === 0 ? 0 : 14}
+                  >
+                    {transition.symbol}
+                  </tspan>
+                ))}
               </text>
             </g>
           )
@@ -223,22 +662,49 @@ function AutomatonGraph({
         const startY = from.y + unitY * nodeRadius
         const endX = to.x - unitX * nodeRadius
         const endY = to.y - unitY * nodeRadius
-        const labelX = (startX + endX) / 2 + -unitY * 12
-        const labelY = (startY + endY) / 2 + unitX * 12
+        const defaultPlacement: RoutedEdgePlacement = {
+          curveOffset: 18,
+          labelOffset: 14,
+        }
+        const chosenPlacement =
+          routedPlacementByGroupKey.get(group.groupKey) ?? defaultPlacement
+        const curveOffset = chosenPlacement.curveOffset
+        const controlX = (startX + endX) / 2 + -unitY * curveOffset
+        const controlY = (startY + endY) / 2 + unitX * curveOffset
+        const labelX =
+          0.25 * startX +
+          0.5 * controlX +
+          0.25 * endX +
+          -unitY * chosenPlacement.labelOffset
+        const labelY =
+          0.25 * startY +
+          0.5 * controlY +
+          0.25 * endY +
+          unitX * chosenPlacement.labelOffset
 
         return (
-          <g key={`${transition.from}-${transition.symbol}-${transition.to}`}>
-            <line
-              x1={startX}
-              y1={startY}
-              x2={endX}
-              y2={endY}
+          <g key={group.groupKey}>
+            <path
+              d={`M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`}
+              fill="none"
               stroke={strokeColor}
               strokeWidth={strokeWidth}
               markerEnd="url(#arrow)"
             />
-            <text x={labelX} y={labelY} textAnchor="middle" fill={textColor}>
-              {transition.symbol}
+            <text
+              x={labelX}
+              y={labelY}
+              textAnchor="middle"
+              fill={textColor}
+              stroke="#fbfdff"
+              strokeWidth={4}
+              paintOrder="stroke"
+            >
+              {group.transitions.map((transition, index) => (
+                <tspan key={transition.symbol} x={labelX} dy={index === 0 ? 0 : 14}>
+                  {transition.symbol}
+                </tspan>
+              ))}
             </text>
           </g>
         )
