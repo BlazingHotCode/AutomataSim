@@ -105,7 +105,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [x] Show result clearly: Accept / Reject.
 - [x] Allow simulating step by step.
 - [x] Show step-by-step trace (current state after each symbol).
-- [ ] Add playback controls for simulation walkthrough:
+- [x] Add playback controls for simulation walkthrough:
   - 5.4.1 next step
   - 5.4.2 previous step
   - 5.4.3 auto-play

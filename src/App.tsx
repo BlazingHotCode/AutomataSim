@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { parseDeterministicFiniteAutomaton } from './lib/parseAutomaton'
 import { simulateDFA } from './lib/simulateDFA'
@@ -248,6 +248,7 @@ function App() {
   const [simulationResult, setSimulationResult] =
     useState<DeterministicSimulationResult | null>(null)
   const [activeStepIndex, setActiveStepIndex] = useState(-1)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
     (option) => option.id === selectedAutomatonType,
@@ -267,6 +268,7 @@ function App() {
     }))
     setSimulationResult(null)
     setActiveStepIndex(-1)
+    setIsAutoPlaying(false)
   }
 
   function handleRunSimulation() {
@@ -277,18 +279,21 @@ function App() {
     if (!parseResult?.value) {
       setSimulationResult(null)
       setActiveStepIndex(-1)
+      setIsAutoPlaying(false)
       return
     }
 
     const nextResult = simulateDFA(parseResult.value, inputString)
     setSimulationResult(nextResult)
     setActiveStepIndex(nextResult.trace.length - 1)
+    setIsAutoPlaying(false)
   }
 
   const totalTraceSteps = simulationResult?.trace.length ?? 0
   const canStepBackward = simulationResult !== null && activeStepIndex >= 0
   const canStepForward =
     simulationResult !== null && activeStepIndex < totalTraceSteps - 1
+  const canAutoPlay = simulationResult !== null && totalTraceSteps > 0
   const activeState =
     simulationResult === null
       ? null
@@ -312,6 +317,44 @@ function App() {
     simulationResult !== null && activeStepIndex >= 0
       ? `${simulationResult.trace[activeStepIndex].fromState}|${simulationResult.trace[activeStepIndex].symbol}|${simulationResult.trace[activeStepIndex].toState}`
       : null
+
+  useEffect(() => {
+    if (!isAutoPlaying) {
+      return
+    }
+
+    if (!simulationResult || simulationResult.trace.length === 0) {
+      return
+    }
+
+    if (activeStepIndex >= simulationResult.trace.length - 1) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setActiveStepIndex((value) => {
+        const maxIndex = simulationResult.trace.length - 1
+        const nextValue = Math.min(value + 1, maxIndex)
+        if (nextValue >= maxIndex) {
+          setIsAutoPlaying(false)
+        }
+        return nextValue
+      })
+    }, 700)
+
+    return () => window.clearTimeout(timer)
+  }, [activeStepIndex, isAutoPlaying, simulationResult])
+
+  function handleStartAutoPlay() {
+    if (!canAutoPlay) {
+      return
+    }
+
+    if (activeStepIndex >= totalTraceSteps - 1) {
+      setActiveStepIndex(-1)
+    }
+    setIsAutoPlaying(true)
+  }
 
   return (
     <main className="app-shell">
@@ -337,6 +380,7 @@ function App() {
               setSelectedAutomatonType(event.target.value as AutomatonType)
               setSimulationResult(null)
               setActiveStepIndex(-1)
+              setIsAutoPlaying(false)
             }}
           >
             {AUTOMATON_OPTIONS.map((option) => (
@@ -374,6 +418,7 @@ function App() {
                   setInputString(event.target.value)
                   setSimulationResult(null)
                   setActiveStepIndex(-1)
+                  setIsAutoPlaying(false)
                 }}
                 placeholder="Example: 10101 or a b a"
               />
@@ -482,7 +527,7 @@ function App() {
                     className="step-button"
                     type="button"
                     onClick={() => setActiveStepIndex((value) => value - 1)}
-                    disabled={!canStepBackward}
+                    disabled={!canStepBackward || isAutoPlaying}
                   >
                     Previous
                   </button>
@@ -490,15 +535,34 @@ function App() {
                     className="step-button"
                     type="button"
                     onClick={() => setActiveStepIndex((value) => value + 1)}
-                    disabled={!canStepForward}
+                    disabled={!canStepForward || isAutoPlaying}
                   >
                     Next
                   </button>
                   <button
                     className="step-button"
                     type="button"
-                    onClick={() => setActiveStepIndex(-1)}
-                    disabled={simulationResult.trace.length === 0}
+                    onClick={handleStartAutoPlay}
+                    disabled={!canAutoPlay || isAutoPlaying}
+                  >
+                    Auto-play
+                  </button>
+                  <button
+                    className="step-button"
+                    type="button"
+                    onClick={() => setIsAutoPlaying(false)}
+                    disabled={!isAutoPlaying}
+                  >
+                    Pause
+                  </button>
+                  <button
+                    className="step-button"
+                    type="button"
+                    onClick={() => {
+                      setIsAutoPlaying(false)
+                      setActiveStepIndex(-1)
+                    }}
+                    disabled={simulationResult.trace.length === 0 && activeStepIndex < 0}
                   >
                     Reset
                   </button>
