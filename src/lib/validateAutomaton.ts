@@ -43,7 +43,9 @@ export function validateDeterministicFiniteAutomaton(
       errors.push(`Transition target "${transition.to}" is not in states.`)
     }
     if (!alphabetSet.has(transition.symbol)) {
-      errors.push(`Transition symbol "${transition.symbol}" is not in alphabet.`)
+      errors.push(
+        `Transition symbol "${transition.symbol}" is not in alphabet.`,
+      )
     }
 
     const key = `${transition.from}|${transition.symbol}`

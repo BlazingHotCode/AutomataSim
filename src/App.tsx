@@ -125,10 +125,7 @@ function getConnectionAwareStatePositions(
   }
 
   // Put unreachable states after the furthest reachable layer.
-  const maxReachableDistance = Math.max(
-    0,
-    ...Array.from(distances.values()),
-  )
+  const maxReachableDistance = Math.max(0, ...Array.from(distances.values()))
   let unreachableOffset = 1
   machine.states.forEach((state) => {
     if (!distances.has(state)) {
@@ -273,7 +270,9 @@ function AutomatonGraph({
     if (points.length === 0) {
       return 999
     }
-    return Math.min(...points.map((otherPoint) => pointDistance(point, otherPoint)))
+    return Math.min(
+      ...points.map((otherPoint) => pointDistance(point, otherPoint)),
+    )
   }
 
   function minDistanceToNodeEdges(
@@ -341,15 +340,24 @@ function AutomatonGraph({
   const chosenControlPoints: Point[] = []
   const chosenLabelPoints: Point[] = []
 
-  const selfLoopGroups = transitionGroups.filter((group) => group.from === group.to)
-  const nonSelfGroups = transitionGroups.filter((group) => group.from !== group.to)
+  const selfLoopGroups = transitionGroups.filter(
+    (group) => group.from === group.to,
+  )
+  const nonSelfGroups = transitionGroups.filter(
+    (group) => group.from !== group.to,
+  )
 
   const selfLoopDirectionCandidates = [
     -Math.PI / 2, // top only
   ]
 
   function getSelfLoopCandidatePlacement(
-    group: { from: string; to: string; groupKey: string; transitions: DeterministicFiniteAutomaton['transitions'] },
+    group: {
+      from: string
+      to: string
+      groupKey: string
+      transitions: DeterministicFiniteAutomaton['transitions']
+    },
     directionAngle: number,
   ): { placement: SelfLoopPlacement; score: number } {
     const center = positions[group.from]
@@ -359,7 +367,8 @@ function AutomatonGraph({
     const tangentY = Math.cos(directionAngle)
     const spread = 12
     const bulge = nodeRadius + 46
-    const labelDistance = nodeRadius + 62 + Math.max(0, group.transitions.length - 1) * 6
+    const labelDistance =
+      nodeRadius + 62 + Math.max(0, group.transitions.length - 1) * 6
 
     const start = {
       x: center.x + radialX * nodeRadius - tangentX * spread,
@@ -399,7 +408,10 @@ function AutomatonGraph({
       minDistanceToPoints(control1, chosenControlPoints) +
       minDistanceToPoints(control2, chosenControlPoints) +
       minDistanceToPoints(labelPoint, chosenLabelPoints)
-    const score = minCurveClearanceToNodeEdge * 2.2 + labelClearanceToNodeEdge + routeClearance * 1.1
+    const score =
+      minCurveClearanceToNodeEdge * 2.2 +
+      labelClearanceToNodeEdge +
+      routeClearance * 1.1
 
     return {
       placement: {
@@ -424,7 +436,10 @@ function AutomatonGraph({
   }
 
   selfLoopGroups.forEach((group) => {
-    let best = getSelfLoopCandidatePlacement(group, selfLoopDirectionCandidates[0])
+    let best = getSelfLoopCandidatePlacement(
+      group,
+      selfLoopDirectionCandidates[0],
+    )
     selfLoopDirectionCandidates.slice(1).forEach((directionAngle) => {
       const candidate = getSelfLoopCandidatePlacement(group, directionAngle)
       if (candidate.score > best.score) {
@@ -441,7 +456,10 @@ function AutomatonGraph({
     hasReverseDirection: boolean,
   ) {
     const geometry = getEdgeGeometry(group.from, group.to)
-    const baseCurveMagnitude = Math.max(20, Math.min(34, geometry.length * 0.13))
+    const baseCurveMagnitude = Math.max(
+      20,
+      Math.min(34, geometry.length * 0.13),
+    )
     const pairExtraMagnitude = hasReverseDirection
       ? Math.max(34, Math.min(58, geometry.length * 0.24))
       : 0
@@ -455,7 +473,8 @@ function AutomatonGraph({
         x: (geometry.startX + geometry.endX) / 2 + normalX * curveOffset,
         y: (geometry.startY + geometry.endY) / 2 + normalY * curveOffset,
       }
-      const labelOffset = sign * Math.max(16, Math.min(30, curveMagnitude * 0.35))
+      const labelOffset =
+        sign * Math.max(16, Math.min(30, curveMagnitude * 0.35))
       const labelPoint = {
         x:
           0.25 * geometry.startX +
@@ -478,7 +497,9 @@ function AutomatonGraph({
         ),
       )
       const minCurveClearanceToNodeEdge = Math.min(
-        ...curvePoints.map((point) => minDistanceToNodeEdges(point, excludedStates)),
+        ...curvePoints.map((point) =>
+          minDistanceToNodeEdges(point, excludedStates),
+        ),
       )
       const labelClearanceToNodeEdge = minDistanceToNodeEdges(
         labelPoint,
@@ -631,9 +652,19 @@ function AutomatonGraph({
         const isTraversed = transitionKeys.some((key) =>
           traversedTransitionKeys.has(key),
         )
-        const isActive = transitionKeys.some((key) => key === activeTransitionKey)
-        const strokeColor = isActive ? '#d36b1f' : isTraversed ? '#2f7f4f' : '#2e4c76'
-        const textColor = isActive ? '#8d3f08' : isTraversed ? '#1d5b34' : '#10284a'
+        const isActive = transitionKeys.some(
+          (key) => key === activeTransitionKey,
+        )
+        const strokeColor = isActive
+          ? '#d36b1f'
+          : isTraversed
+            ? '#2f7f4f'
+            : '#2e4c76'
+        const textColor = isActive
+          ? '#8d3f08'
+          : isTraversed
+            ? '#1d5b34'
+            : '#10284a'
         const strokeWidth = isActive ? 3 : 2
 
         if (isSelfLoop) {
@@ -725,7 +756,11 @@ function AutomatonGraph({
               paintOrder="stroke"
             >
               {group.transitions.map((transition, index) => (
-                <tspan key={transition.symbol} x={labelX} dy={index === 0 ? 0 : 14}>
+                <tspan
+                  key={transition.symbol}
+                  x={labelX}
+                  dy={index === 0 ? 0 : 14}
+                >
                   {transition.symbol}
                 </tspan>
               ))}
@@ -830,7 +865,9 @@ function App() {
         deterministicInputString?: unknown
       }
       const maybeType = parsed.selectedAutomatonType
-      const validType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
+      const validType = AUTOMATON_OPTIONS.some(
+        (option) => option.id === maybeType,
+      )
       if (!validType) {
         return null
       }
@@ -842,13 +879,16 @@ function App() {
         selectedAutomatonType: maybeType as AutomatonType,
         definitionsByType: {
           deterministicFiniteAutomaton:
-            typeof persistedDefinitions.deterministicFiniteAutomaton === 'string'
+            typeof persistedDefinitions.deterministicFiniteAutomaton ===
+            'string'
               ? persistedDefinitions.deterministicFiniteAutomaton
               : fallbackDefinitions.deterministicFiniteAutomaton.definitionText,
           nondeterministicFiniteAutomaton:
-            typeof persistedDefinitions.nondeterministicFiniteAutomaton === 'string'
+            typeof persistedDefinitions.nondeterministicFiniteAutomaton ===
+            'string'
               ? persistedDefinitions.nondeterministicFiniteAutomaton
-              : fallbackDefinitions.nondeterministicFiniteAutomaton.definitionText,
+              : fallbackDefinitions.nondeterministicFiniteAutomaton
+                  .definitionText,
           pushdownAutomaton:
             typeof persistedDefinitions.pushdownAutomaton === 'string'
               ? persistedDefinitions.pushdownAutomaton
@@ -875,7 +915,8 @@ function App() {
   const [persistedUiConfig] = useState(loadPersistedUiConfig)
   const [selectedAutomatonType, setSelectedAutomatonType] =
     useState<AutomatonType>(
-      persistedUiConfig?.selectedAutomatonType ?? 'deterministicFiniteAutomaton',
+      persistedUiConfig?.selectedAutomatonType ??
+        'deterministicFiniteAutomaton',
     )
   const [uiStateByType, setUiStateByType] = useState<UiStateByType>({
     deterministicFiniteAutomaton: {
@@ -894,7 +935,8 @@ function App() {
     },
     pushdownAutomaton: {
       definitionText:
-        persistedUiConfig?.definitionsByType.pushdownAutomaton ?? FUTURE_TEMPLATE,
+        persistedUiConfig?.definitionsByType.pushdownAutomaton ??
+        FUTURE_TEMPLATE,
     },
     queueAutomaton: {
       definitionText:
@@ -939,7 +981,8 @@ function App() {
 
   function getDefinitionsByTypeFromUiState(value: UiStateByType) {
     return {
-      deterministicFiniteAutomaton: value.deterministicFiniteAutomaton.definitionText,
+      deterministicFiniteAutomaton:
+        value.deterministicFiniteAutomaton.definitionText,
       nondeterministicFiniteAutomaton:
         value.nondeterministicFiniteAutomaton.definitionText,
       pushdownAutomaton: value.pushdownAutomaton.definitionText,
@@ -948,10 +991,7 @@ function App() {
     }
   }
 
-  function showTransferMessage(
-    kind: 'success' | 'error',
-    message: string,
-  ) {
+  function showTransferMessage(kind: 'success' | 'error', message: string) {
     setTransferMessageKind(kind)
     setTransferMessage(message)
     if (kind === 'success') {
@@ -1096,7 +1136,8 @@ function App() {
         return {
           ...currentValue,
           activeStepIndex: nextValue,
-          isAutoPlaying: nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          isAutoPlaying:
+            nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
         }
       })
     }, 700)
@@ -1112,7 +1153,8 @@ function App() {
     const payload = {
       selectedAutomatonType,
       definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
-      deterministicInputString: uiStateByType.deterministicFiniteAutomaton.inputString,
+      deterministicInputString:
+        uiStateByType.deterministicFiniteAutomaton.inputString,
     }
 
     try {
@@ -1127,7 +1169,8 @@ function App() {
       version: JSON_EXPORT_VERSION,
       selectedAutomatonType,
       definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
-      deterministicInputString: uiStateByType.deterministicFiniteAutomaton.inputString,
+      deterministicInputString:
+        uiStateByType.deterministicFiniteAutomaton.inputString,
     }
     const jsonText = JSON.stringify(payload, null, 2)
     const fileBlob = new Blob([jsonText], { type: 'application/json' })
@@ -1182,7 +1225,9 @@ function App() {
       }
 
       const maybeType = parsedObject.selectedAutomatonType
-      const isValidType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
+      const isValidType = AUTOMATON_OPTIONS.some(
+        (option) => option.id === maybeType,
+      )
       if (!isValidType) {
         importErrors.push(
           'selectedAutomatonType must be one of the supported automaton type ids.',
@@ -1197,7 +1242,8 @@ function App() {
       }
 
       const definitionsObject =
-        parsedObject.definitionsByType && typeof parsedObject.definitionsByType === 'object'
+        parsedObject.definitionsByType &&
+        typeof parsedObject.definitionsByType === 'object'
           ? parsedObject.definitionsByType
           : ({} as Partial<Record<AutomatonType, unknown>>)
 
@@ -1220,7 +1266,9 @@ function App() {
         parsedObject.deterministicInputString !== undefined &&
         typeof parsedObject.deterministicInputString !== 'string'
       ) {
-        importErrors.push('deterministicInputString must be a string when provided.')
+        importErrors.push(
+          'deterministicInputString must be a string when provided.',
+        )
       }
 
       if (typeof definitionsObject.deterministicFiniteAutomaton === 'string') {
@@ -1228,7 +1276,9 @@ function App() {
           definitionsObject.deterministicFiniteAutomaton,
         )
         if (!deterministicParse.value) {
-          importErrors.push('definitionsByType.deterministicFiniteAutomaton is invalid:')
+          importErrors.push(
+            'definitionsByType.deterministicFiniteAutomaton is invalid:',
+          )
           deterministicParse.errors
             .slice(0, 5)
             .forEach((error) => importErrors.push(`- ${error}`))
@@ -1236,7 +1286,10 @@ function App() {
       }
 
       if (importErrors.length > 0) {
-        showTransferErrors('Import failed due to JSON validation errors.', importErrors)
+        showTransferErrors(
+          'Import failed due to JSON validation errors.',
+          importErrors,
+        )
         return
       }
 
@@ -1250,7 +1303,8 @@ function App() {
       const importedState: UiStateByType = {
         deterministicFiniteAutomaton: {
           definitionText:
-            typeof parsedConfig.definitionsByType?.deterministicFiniteAutomaton === 'string'
+            typeof parsedConfig.definitionsByType
+              ?.deterministicFiniteAutomaton === 'string'
               ? parsedConfig.definitionsByType.deterministicFiniteAutomaton
               : defaultState.deterministicFiniteAutomaton.definitionText,
           inputString:
@@ -1263,13 +1317,15 @@ function App() {
         },
         nondeterministicFiniteAutomaton: {
           definitionText:
-            typeof parsedConfig.definitionsByType?.nondeterministicFiniteAutomaton === 'string'
+            typeof parsedConfig.definitionsByType
+              ?.nondeterministicFiniteAutomaton === 'string'
               ? parsedConfig.definitionsByType.nondeterministicFiniteAutomaton
               : defaultState.nondeterministicFiniteAutomaton.definitionText,
         },
         pushdownAutomaton: {
           definitionText:
-            typeof parsedConfig.definitionsByType?.pushdownAutomaton === 'string'
+            typeof parsedConfig.definitionsByType?.pushdownAutomaton ===
+            'string'
               ? parsedConfig.definitionsByType.pushdownAutomaton
               : defaultState.pushdownAutomaton.definitionText,
         },
@@ -1409,13 +1465,14 @@ function App() {
               }
             >
               <p>{transferMessage}</p>
-              {transferMessageKind === 'error' && transferErrorDetails.length > 0 && (
-                <ul className="transfer-error-list">
-                  {transferErrorDetails.map((detail) => (
-                    <li key={detail}>{detail}</li>
-                  ))}
-                </ul>
-              )}
+              {transferMessageKind === 'error' &&
+                transferErrorDetails.length > 0 && (
+                  <ul className="transfer-error-list">
+                    {transferErrorDetails.map((detail) => (
+                      <li key={detail}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
             </div>
           )}
 
@@ -1513,11 +1570,7 @@ function App() {
           ) : (
             <div className="info-box">
               <h3>Coming Soon</h3>
-              <p>
-                {selectedOption.label}
-                {' '}
-                support is planned in the roadmap.
-              </p>
+              <p>{selectedOption.label} support is planned in the roadmap.</p>
             </div>
           )}
 
@@ -1544,17 +1597,14 @@ function App() {
               }
             >
               <h3>
-                Result:
-                {' '}
+                Result:{' '}
                 {simulationResult.accepted &&
                 simulationResult.errors.length === 0
                   ? 'Accept'
                   : 'Reject'}
               </h3>
               <p>
-                Final state:
-                {' '}
-                <strong>{simulationResult.finalState}</strong>
+                Final state: <strong>{simulationResult.finalState}</strong>
               </p>
               {simulationResult.errors.length > 0 && (
                 <ul>
@@ -1567,17 +1617,11 @@ function App() {
               <div className="step-runner">
                 <h4>Step Runner</h4>
                 <p>
-                  Step:
-                  {' '}
+                  Step:{' '}
                   <strong>
-                    {Math.max(0, activeStepIndex + 1)}
-                    /
-                    {totalTraceSteps}
-                  </strong>
-                  {' '}
-                  | Current state:
-                  {' '}
-                  <strong>{activeState}</strong>
+                    {Math.max(0, activeStepIndex + 1)}/{totalTraceSteps}
+                  </strong>{' '}
+                  | Current state: <strong>{activeState}</strong>
                 </p>
                 <div className="step-controls">
                   <button
@@ -1631,7 +1675,9 @@ function App() {
                     className="step-button"
                     type="button"
                     onClick={handleResetSimulationProgress}
-                    disabled={simulationResult.trace.length === 0 && activeStepIndex < 0}
+                    disabled={
+                      simulationResult.trace.length === 0 && activeStepIndex < 0
+                    }
                   >
                     Reset
                   </button>
@@ -1642,14 +1688,11 @@ function App() {
                     {simulationResult.trace.map((step, index) => (
                       <li
                         key={`${step.index}-${step.symbol}-${step.fromState}-${step.toState}`}
-                        className={index === activeStepIndex ? 'trace-active' : ''}
+                        className={
+                          index === activeStepIndex ? 'trace-active' : ''
+                        }
                       >
-                        Read
-                        {' '}
-                        <strong>{step.symbol}</strong>
-                        :
-                        {' '}
-                        {step.fromState}
+                        Read <strong>{step.symbol}</strong>: {step.fromState}
                         {' -> '}
                         {step.toState}
                       </li>

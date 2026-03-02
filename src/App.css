@@ -10,7 +10,12 @@
   color: #f7fbff;
   border-radius: 20px;
   padding: 2rem;
-  background: radial-gradient(circle at top left, #2f6bce, #113974 55%, #0b1f43);
+  background: radial-gradient(
+    circle at top left,
+    #2f6bce,
+    #113974 55%,
+    #0b1f43
+  );
   box-shadow: 0 16px 40px rgba(7, 24, 54, 0.35);
 }
 
@@ -93,7 +98,11 @@
   border: 1px solid #bccde5;
   border-radius: 12px;
   padding: 0.8rem;
-  font: 14px/1.5 'Cascadia Mono', Consolas, Monaco, monospace;
+  font:
+    14px/1.5 'Cascadia Mono',
+    Consolas,
+    Monaco,
+    monospace;
   color: #10284a;
   background: #f8fbff;
   resize: vertical;

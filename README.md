@@ -22,4 +22,5 @@ This repo deploys automatically to GitHub Pages via [`.github/workflows/deploy.y
 - Vite base path: `/AutomataSim/` (configured in `vite.config.ts`)
 
 Expected URL format:
+
 - `https://<github-username>.github.io/AutomataSim/`

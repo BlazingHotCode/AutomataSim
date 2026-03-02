@@ -125,7 +125,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - 7.1.1 `test`
   - 7.1.2 `test:watch`
 - [x] Add CI checks (build + lint + test) on pull requests.
-- [ ] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
+- [x] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
 - [ ] Add lightweight error boundary for runtime UI crashes.
 - [ ] Split `src/App.tsx` into multiple files/components (graph rendering, simulation controls, import/export logic, and shared state helpers).
 - [ ] Refactor code into modular, reusable units (components, parsing utilities, simulation hooks, shared types).

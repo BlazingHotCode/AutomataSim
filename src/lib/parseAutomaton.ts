@@ -54,7 +54,8 @@ export function parseDeterministicFiniteAutomaton(
 
   const stateSet = new Set(states)
   const alphabetSet = new Set(alphabet)
-  if (stateSet.size !== states.length) errors.push('State names must be unique.')
+  if (stateSet.size !== states.length)
+    errors.push('State names must be unique.')
   if (alphabetSet.size !== alphabet.length) {
     errors.push('Alphabet symbols must be unique.')
   }
