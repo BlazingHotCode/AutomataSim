@@ -63,24 +63,86 @@ q2,1 -> q2`
 const FUTURE_TEMPLATE = `# Format for this automaton type will be added here.
 # This mode is planned but not implemented yet.`
 
-function getStatePositions(states: string[]) {
+function getConnectionAwareStatePositions(
+  machine: DeterministicFiniteAutomaton,
+) {
   const width = 720
   const height = 360
-  const radius = Math.min(width, height) * 0.32
-  const centerX = width / 2
-  const centerY = height / 2
+  const marginX = 80
+  const marginY = 56
+  const availableWidth = width - marginX * 2
+  const availableHeight = height - marginY * 2
 
-  return states.reduce<Record<string, { x: number; y: number }>>(
-    (accumulator, state, index) => {
-      const angle = (index / states.length) * Math.PI * 2 - Math.PI / 2
-      accumulator[state] = {
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
+  if (machine.states.length === 0) {
+    return {}
+  }
+
+  const adjacency = new Map<string, string[]>()
+  machine.states.forEach((state) => adjacency.set(state, []))
+  machine.transitions.forEach((transition) => {
+    adjacency.get(transition.from)?.push(transition.to)
+  })
+
+  // Layer by shortest distance from start state so directional flow is left->right.
+  const distances = new Map<string, number>()
+  const queue: string[] = [machine.startState]
+  distances.set(machine.startState, 0)
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    const currentDistance = distances.get(current) ?? 0
+    const neighbors = adjacency.get(current) ?? []
+    neighbors.forEach((neighbor) => {
+      if (!distances.has(neighbor)) {
+        distances.set(neighbor, currentDistance + 1)
+        queue.push(neighbor)
       }
-      return accumulator
-    },
-    {},
+    })
+  }
+
+  // Put unreachable states after the furthest reachable layer.
+  const maxReachableDistance = Math.max(
+    0,
+    ...Array.from(distances.values()),
   )
+  let unreachableOffset = 1
+  machine.states.forEach((state) => {
+    if (!distances.has(state)) {
+      distances.set(state, maxReachableDistance + unreachableOffset)
+      unreachableOffset += 1
+    }
+  })
+
+  const layers = new Map<number, string[]>()
+  machine.states.forEach((state) => {
+    const level = distances.get(state) ?? 0
+    if (!layers.has(level)) {
+      layers.set(level, [])
+    }
+    layers.get(level)!.push(state)
+  })
+
+  const layerIndices = Array.from(layers.keys()).sort((a, b) => a - b)
+  const layerCount = layerIndices.length
+  const positions: Record<string, { x: number; y: number }> = {}
+
+  layerIndices.forEach((layer, layerIndex) => {
+    const layerStates = layers.get(layer) ?? []
+    layerStates.sort()
+    const xRatio = layerCount <= 1 ? 0.5 : layerIndex / (layerCount - 1)
+    const x = marginX + xRatio * availableWidth
+    const count = layerStates.length
+
+    layerStates.forEach((state, stateIndex) => {
+      const yRatio = count <= 1 ? 0.5 : stateIndex / (count - 1)
+      positions[state] = {
+        x,
+        y: marginY + yRatio * availableHeight,
+      }
+    })
+  })
+
+  return positions
 }
 
 interface AutomatonGraphProps {
@@ -98,7 +160,7 @@ function AutomatonGraph({
   traversedTransitionKeys = new Set<string>(),
   activeTransitionKey = null,
 }: AutomatonGraphProps) {
-  const positions = getStatePositions(machine.states)
+  const positions = getConnectionAwareStatePositions(machine)
   const nodeRadius = 28
 
   return (
