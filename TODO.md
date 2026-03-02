@@ -32,7 +32,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - 2.3.4 Queue Automaton support
   - 2.3.5 advanced animations
   - 2.3.6 authentication
-- [x] Define post-MVP automata expansion plan:
+- [x] Define post-MVP automata expansion plan (planning only, not implementation):
   - 2.4.1 Nondeterministic Finite Automaton
     - Phase 1: add Nondeterministic Finite Automaton types + parser mode.
     - Phase 2: implement epsilon-closure based simulation and trace output.
@@ -49,6 +49,29 @@ Use this as a step-by-step build plan. Check items off as you complete them.
     - Phase 1: extend model with queue alphabet and enqueue/dequeue transition actions.
     - Phase 2: implement deterministic simulation with queue snapshots per step.
     - Phase 3: add queue visualization panel and playback controls.
+
+## 2A. Post-MVP Implementation Backlog (Not Done)
+
+- [ ] 2A.1 Implement Nondeterministic Finite Automaton
+  - [ ] 2A.1.1 Add types + parser mode.
+  - [ ] 2A.1.2 Implement epsilon-closure simulation + trace.
+  - [ ] 2A.1.3 Add renderer support for multiple active states.
+  - [ ] 2A.1.4 Add engine and parser tests.
+- [ ] 2A.2 Implement Pushdown Automaton
+  - [ ] 2A.2.1 Add model for stack alphabet and push/pop transitions.
+  - [ ] 2A.2.2 Implement step simulation with stack snapshots.
+  - [ ] 2A.2.3 Add stack UI visualization.
+  - [ ] 2A.2.4 Add engine and parser tests.
+- [ ] 2A.3 Implement Turing Machine
+  - [ ] 2A.3.1 Add tape/head model + parser mode.
+  - [ ] 2A.3.2 Implement execution engine with halt/step safeguards.
+  - [ ] 2A.3.3 Add tape/head visualization and controls.
+  - [ ] 2A.3.4 Add engine and parser tests.
+- [ ] 2A.4 Implement Queue Automaton
+  - [ ] 2A.4.1 Add queue model + parser mode.
+  - [ ] 2A.4.2 Implement queue transition simulation with snapshots.
+  - [ ] 2A.4.3 Add queue visualization and playback controls.
+  - [ ] 2A.4.4 Add engine and parser tests.
 
 ## 3. Data Model and Engine
 
