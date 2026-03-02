@@ -133,8 +133,8 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 ## 8. GitHub Pages Deploy Hardening
 
 - [x] Keep `vite.config.ts` base path synced with repo name (`/AutomataSim/`).
-- [ ] Verify deploy workflow succeeds on `main` pushes.
-- [ ] Confirm app loads correctly from `https://<username>.github.io/AutomataSim/`.
+- [x] Verify deploy workflow succeeds on `main` pushes.
+- [x] Confirm app loads correctly from `https://<username>.github.io/AutomataSim/`.
 - [x] Add deployment troubleshooting notes to `README.md`.
 
 ## 9. Immediate Next Actions
