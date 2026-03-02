@@ -117,7 +117,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 - [x] Save/load machine config to `localStorage`.
 - [x] Add import/export JSON for automata definitions.
-- [ ] Validate imported JSON and show useful errors.
+- [x] Validate imported JSON and show useful errors.
 
 ## 7. Quality and Tooling
 

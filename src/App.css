@@ -118,14 +118,29 @@
 .transfer-message {
   margin: 0.5rem 0 0;
   font-size: 0.9rem;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+
+.transfer-message p {
+  margin: 0;
 }
 
 .transfer-message-success {
   color: #1f6a3a;
+  background: #edf9f0;
+  border: 1px solid #c2e7cd;
 }
 
 .transfer-message-error {
   color: #8a1616;
+  background: #fff5f5;
+  border: 1px solid #efc6c6;
+}
+
+.transfer-error-list {
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
 }
 
 .string-input {

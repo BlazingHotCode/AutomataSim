@@ -909,6 +909,7 @@ function App() {
   const [transferMessageKind, setTransferMessageKind] = useState<
     'success' | 'error'
   >('success')
+  const [transferErrorDetails, setTransferErrorDetails] = useState<string[]>([])
   const importFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
@@ -953,6 +954,15 @@ function App() {
   ) {
     setTransferMessageKind(kind)
     setTransferMessage(message)
+    if (kind === 'success') {
+      setTransferErrorDetails([])
+    }
+  }
+
+  function showTransferErrors(message: string, details: string[]) {
+    setTransferMessageKind('error')
+    setTransferMessage(message)
+    setTransferErrorDetails(details)
   }
 
   const parseResult = useMemo(() => {
@@ -1142,29 +1152,110 @@ function App() {
 
     try {
       const fileText = await selectedFile.text()
-      const parsed = JSON.parse(fileText) as {
+      const parsed = JSON.parse(fileText) as unknown
+
+      const importErrors: string[] = []
+      const parsedObject =
+        typeof parsed === 'object' && parsed !== null
+          ? (parsed as {
+              version?: unknown
+              selectedAutomatonType?: unknown
+              definitionsByType?: Partial<Record<AutomatonType, unknown>>
+              deterministicInputString?: unknown
+            })
+          : null
+
+      if (!parsedObject) {
+        showTransferErrors('Invalid config file format.', [
+          'Root JSON value must be an object.',
+        ])
+        return
+      }
+
+      if (
+        parsedObject.version !== undefined &&
+        parsedObject.version !== JSON_EXPORT_VERSION
+      ) {
+        importErrors.push(
+          `version must be ${JSON_EXPORT_VERSION} when provided.`,
+        )
+      }
+
+      const maybeType = parsedObject.selectedAutomatonType
+      const isValidType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
+      if (!isValidType) {
+        importErrors.push(
+          'selectedAutomatonType must be one of the supported automaton type ids.',
+        )
+      }
+
+      if (
+        typeof parsedObject.definitionsByType !== 'object' ||
+        parsedObject.definitionsByType === null
+      ) {
+        importErrors.push('definitionsByType must be an object.')
+      }
+
+      const definitionsObject =
+        parsedObject.definitionsByType && typeof parsedObject.definitionsByType === 'object'
+          ? parsedObject.definitionsByType
+          : ({} as Partial<Record<AutomatonType, unknown>>)
+
+      const definitionKeys: AutomatonType[] = [
+        'deterministicFiniteAutomaton',
+        'nondeterministicFiniteAutomaton',
+        'pushdownAutomaton',
+        'queueAutomaton',
+        'turingMachine',
+      ]
+
+      definitionKeys.forEach((key) => {
+        const value = definitionsObject[key]
+        if (typeof value !== 'string') {
+          importErrors.push(`definitionsByType.${key} must be a string.`)
+        }
+      })
+
+      if (
+        parsedObject.deterministicInputString !== undefined &&
+        typeof parsedObject.deterministicInputString !== 'string'
+      ) {
+        importErrors.push('deterministicInputString must be a string when provided.')
+      }
+
+      if (typeof definitionsObject.deterministicFiniteAutomaton === 'string') {
+        const deterministicParse = parseDeterministicFiniteAutomaton(
+          definitionsObject.deterministicFiniteAutomaton,
+        )
+        if (!deterministicParse.value) {
+          importErrors.push('definitionsByType.deterministicFiniteAutomaton is invalid:')
+          deterministicParse.errors
+            .slice(0, 5)
+            .forEach((error) => importErrors.push(`- ${error}`))
+        }
+      }
+
+      if (importErrors.length > 0) {
+        showTransferErrors('Import failed due to JSON validation errors.', importErrors)
+        return
+      }
+
+      const parsedConfig = parsedObject as {
         selectedAutomatonType?: unknown
         definitionsByType?: Partial<Record<AutomatonType, unknown>>
         deterministicInputString?: unknown
-      }
-
-      const maybeType = parsed.selectedAutomatonType
-      const isValidType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
-      if (!isValidType || !parsed.definitionsByType) {
-        showTransferMessage('error', 'Invalid config file format.')
-        return
       }
 
       const defaultState = getDefaultUiStateByType()
       const importedState: UiStateByType = {
         deterministicFiniteAutomaton: {
           definitionText:
-            typeof parsed.definitionsByType.deterministicFiniteAutomaton === 'string'
-              ? parsed.definitionsByType.deterministicFiniteAutomaton
+            typeof parsedConfig.definitionsByType?.deterministicFiniteAutomaton === 'string'
+              ? parsedConfig.definitionsByType.deterministicFiniteAutomaton
               : defaultState.deterministicFiniteAutomaton.definitionText,
           inputString:
-            typeof parsed.deterministicInputString === 'string'
-              ? parsed.deterministicInputString
+            typeof parsedConfig.deterministicInputString === 'string'
+              ? parsedConfig.deterministicInputString
               : '',
           simulationResult: null,
           activeStepIndex: -1,
@@ -1172,26 +1263,26 @@ function App() {
         },
         nondeterministicFiniteAutomaton: {
           definitionText:
-            typeof parsed.definitionsByType.nondeterministicFiniteAutomaton === 'string'
-              ? parsed.definitionsByType.nondeterministicFiniteAutomaton
+            typeof parsedConfig.definitionsByType?.nondeterministicFiniteAutomaton === 'string'
+              ? parsedConfig.definitionsByType.nondeterministicFiniteAutomaton
               : defaultState.nondeterministicFiniteAutomaton.definitionText,
         },
         pushdownAutomaton: {
           definitionText:
-            typeof parsed.definitionsByType.pushdownAutomaton === 'string'
-              ? parsed.definitionsByType.pushdownAutomaton
+            typeof parsedConfig.definitionsByType?.pushdownAutomaton === 'string'
+              ? parsedConfig.definitionsByType.pushdownAutomaton
               : defaultState.pushdownAutomaton.definitionText,
         },
         queueAutomaton: {
           definitionText:
-            typeof parsed.definitionsByType.queueAutomaton === 'string'
-              ? parsed.definitionsByType.queueAutomaton
+            typeof parsedConfig.definitionsByType?.queueAutomaton === 'string'
+              ? parsedConfig.definitionsByType.queueAutomaton
               : defaultState.queueAutomaton.definitionText,
         },
         turingMachine: {
           definitionText:
-            typeof parsed.definitionsByType.turingMachine === 'string'
-              ? parsed.definitionsByType.turingMachine
+            typeof parsedConfig.definitionsByType?.turingMachine === 'string'
+              ? parsedConfig.definitionsByType.turingMachine
               : defaultState.turingMachine.definitionText,
         },
       }
@@ -1200,7 +1291,9 @@ function App() {
       setSelectedAutomatonType(maybeType as AutomatonType)
       showTransferMessage('success', 'Imported JSON configuration.')
     } catch {
-      showTransferMessage('error', 'Failed to read JSON file.')
+      showTransferErrors('Failed to read JSON file.', [
+        'File must contain valid JSON text.',
+      ])
     }
   }
 
@@ -1308,15 +1401,22 @@ function App() {
             />
           </div>
           {transferMessage && (
-            <p
+            <div
               className={
                 transferMessageKind === 'success'
                   ? 'transfer-message transfer-message-success'
                   : 'transfer-message transfer-message-error'
               }
             >
-              {transferMessage}
-            </p>
+              <p>{transferMessage}</p>
+              {transferMessageKind === 'error' && transferErrorDetails.length > 0 && (
+                <ul className="transfer-error-list">
+                  {transferErrorDetails.map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           {selectedOption.supported && (
