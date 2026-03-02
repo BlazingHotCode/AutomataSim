@@ -3,7 +3,48 @@ import './App.css'
 import { parseDeterministicFiniteAutomaton } from './lib/parseAutomaton'
 import type { DeterministicFiniteAutomaton } from './types/automaton'
 
-const SAMPLE_AUTOMATON = `states: q0,q1,q2
+type AutomatonType =
+  | 'deterministicFiniteAutomaton'
+  | 'nondeterministicFiniteAutomaton'
+  | 'pushdownAutomaton'
+  | 'queueAutomaton'
+  | 'turingMachine'
+
+interface AutomatonOption {
+  id: AutomatonType
+  label: string
+  supported: boolean
+}
+
+const AUTOMATON_OPTIONS: AutomatonOption[] = [
+  {
+    id: 'deterministicFiniteAutomaton',
+    label: 'Deterministic Finite Automaton',
+    supported: true,
+  },
+  {
+    id: 'nondeterministicFiniteAutomaton',
+    label: 'Nondeterministic Finite Automaton',
+    supported: false,
+  },
+  {
+    id: 'pushdownAutomaton',
+    label: 'Pushdown Automaton',
+    supported: false,
+  },
+  {
+    id: 'queueAutomaton',
+    label: 'Queue Automaton',
+    supported: false,
+  },
+  {
+    id: 'turingMachine',
+    label: 'Turing Machine',
+    supported: false,
+  },
+]
+
+const DETERMINISTIC_SAMPLE = `states: q0,q1,q2
 alphabet: 0,1
 start: q0
 accept: q2
@@ -14,6 +55,9 @@ q1,0 -> q2
 q1,1 -> q1
 q2,0 -> q2
 q2,1 -> q2`
+
+const FUTURE_TEMPLATE = `# Format for this automaton type will be added here.
+# This mode is planned but not implemented yet.`
 
 function getStatePositions(states: string[]) {
   const width = 720
@@ -152,11 +196,35 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
 }
 
 function App() {
-  const [definitionText, setDefinitionText] = useState(SAMPLE_AUTOMATON)
-  const parseResult = useMemo(
-    () => parseDeterministicFiniteAutomaton(definitionText),
-    [definitionText],
-  )
+  const [selectedAutomatonType, setSelectedAutomatonType] =
+    useState<AutomatonType>('deterministicFiniteAutomaton')
+  const [definitionsByType, setDefinitionsByType] = useState<
+    Record<AutomatonType, string>
+  >({
+    deterministicFiniteAutomaton: DETERMINISTIC_SAMPLE,
+    nondeterministicFiniteAutomaton: FUTURE_TEMPLATE,
+    pushdownAutomaton: FUTURE_TEMPLATE,
+    queueAutomaton: FUTURE_TEMPLATE,
+    turingMachine: FUTURE_TEMPLATE,
+  })
+
+  const selectedOption = AUTOMATON_OPTIONS.find(
+    (option) => option.id === selectedAutomatonType,
+  )!
+  const definitionText = definitionsByType[selectedAutomatonType]
+  const parseResult = useMemo(() => {
+    if (selectedAutomatonType !== 'deterministicFiniteAutomaton') {
+      return null
+    }
+    return parseDeterministicFiniteAutomaton(definitionText)
+  }, [definitionText, selectedAutomatonType])
+
+  function handleDefinitionChange(nextDefinition: string) {
+    setDefinitionsByType((currentValue) => ({
+      ...currentValue,
+      [selectedAutomatonType]: nextDefinition,
+    }))
+  }
 
   return (
     <main className="app-shell">
@@ -171,33 +239,59 @@ function App() {
 
       <section className="panel editor-grid">
         <div>
+          <label className="selector-label" htmlFor="automatonType">
+            Automaton Type
+          </label>
+          <select
+            id="automatonType"
+            className="type-selector"
+            value={selectedAutomatonType}
+            onChange={(event) =>
+              setSelectedAutomatonType(event.target.value as AutomatonType)
+            }
+          >
+            {AUTOMATON_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
           <h2>Automaton Definition</h2>
           <p className="hint">
-            Format:
-            {' '}
-            `states`, `alphabet`, `start`, `accept`, then `transitions`.
-            Transition syntax: `source,symbol -&gt; target`
+            {selectedOption.supported
+              ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
+              : `The ${selectedOption.label} parser format is not implemented yet.`}
           </p>
           <textarea
             className="definition-input"
             value={definitionText}
-            onChange={(event) => setDefinitionText(event.target.value)}
+            onChange={(event) => handleDefinitionChange(event.target.value)}
             spellCheck={false}
           />
         </div>
 
         <div>
           <h2>Rendered Automaton</h2>
-          {parseResult.value ? (
+          {selectedOption.supported && parseResult?.value ? (
             <AutomatonGraph machine={parseResult.value} />
-          ) : (
+          ) : selectedOption.supported ? (
             <div className="error-box">
               <h3>Definition Errors</h3>
               <ul>
-                {parseResult.errors.map((error) => (
+                {parseResult?.errors.map((error) => (
                   <li key={error}>{error}</li>
                 ))}
               </ul>
+            </div>
+          ) : (
+            <div className="info-box">
+              <h3>Coming Soon</h3>
+              <p>
+                {selectedOption.label}
+                {' '}
+                support is planned in the roadmap.
+              </p>
             </div>
           )}
         </div>
