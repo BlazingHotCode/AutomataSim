@@ -121,10 +121,10 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 7. Quality and Tooling
 
-- [ ] Add a test runner (Vitest recommended) and scripts:
+- [x] Add a test runner (Vitest recommended) and scripts:
   - 7.1.1 `test`
   - 7.1.2 `test:watch`
-- [ ] Add CI checks (build + lint + test) on pull requests.
+- [x] Add CI checks (build + lint + test) on pull requests.
 - [ ] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
 - [ ] Add lightweight error boundary for runtime UI crashes.
 - [ ] Split `src/App.tsx` into multiple files/components (graph rendering, simulation controls, import/export logic, and shared state helpers).
