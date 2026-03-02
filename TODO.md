@@ -4,13 +4,13 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 1. Project Foundation
 
-- [ ] Confirm local setup works: `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm lint`.
-- [ ] Replace starter React/Vite UI in `src/App.tsx` with a clean app shell.
-- [ ] Define a minimal folder structure for growth:
+- [x] Confirm local setup works: `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm lint`.
+- [x] Replace starter React/Vite UI in `src/App.tsx` with a clean app shell.
+- [x] Define a minimal folder structure for growth:
   - `src/components/`
   - `src/lib/` (automata logic)
   - `src/types/`
-- [ ] Add core project docs to `README.md`:
+- [x] Add core project docs to `README.md`:
   - what AutomataSim does
   - how to run locally
   - how to deploy
@@ -78,14 +78,14 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 8. GitHub Pages Deploy Hardening
 
-- [ ] Keep `vite.config.ts` base path synced with repo name (`/AutomataSim/`).
+- [x] Keep `vite.config.ts` base path synced with repo name (`/AutomataSim/`).
 - [ ] Verify deploy workflow succeeds on `main` pushes.
 - [ ] Confirm app loads correctly from `https://<username>.github.io/AutomataSim/`.
 - [ ] Add deployment troubleshooting notes to `README.md`.
 
 ## 9. Immediate Next Actions
 
-- [ ] Step 1: Replace starter `App.tsx` with a minimal AutomataSim layout.
+- [x] Step 1: Replace starter `App.tsx` with a minimal AutomataSim layout.
 - [ ] Step 2: Create `src/types/automaton.ts`.
 - [ ] Step 3: Implement `simulateDFA` in `src/lib/simulateDFA.ts`.
 - [ ] Step 4: Render a basic form to input states/transitions/string.

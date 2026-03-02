@@ -1,31 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+    <main className="app-shell">
+      <section className="hero">
+        <p className="eyebrow">AutomataSim</p>
+        <h1>Finite Automata Playground</h1>
+        <p className="subtitle">
+          Build deterministic machines, run input strings, and inspect each
+          transition step.
         </p>
-      </div>
-    </>
+      </section>
+
+      <section className="panel">
+        <h2>Current Status</h2>
+        <ul>
+          <li>Project foundation is in place.</li>
+          <li>DFA editor and simulator are the next implementation target.</li>
+          <li>Deployment is configured for GitHub Pages.</li>
+        </ul>
+      </section>
+
+      <section className="panel">
+        <h2>Next Build Steps</h2>
+        <ol>
+          <li>Create TypeScript types for automata models.</li>
+          <li>Implement and test a pure DFA simulation engine.</li>
+          <li>Connect UI form inputs to simulation results.</li>
+        </ol>
+      </section>
+    </main>
   )
 }
 
