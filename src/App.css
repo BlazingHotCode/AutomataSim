@@ -104,6 +104,30 @@
   margin-top: 1rem;
 }
 
+.transfer-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.transfer-message {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.transfer-message-success {
+  color: #1f6a3a;
+}
+
+.transfer-message-error {
+  color: #8a1616;
+}
+
 .string-input {
   width: 100%;
   border: 1px solid #bccde5;

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import './App.css'
 import { parseDeterministicFiniteAutomaton } from './lib/parseAutomaton'
 import { simulateDFA } from './lib/simulateDFA'
@@ -84,6 +85,7 @@ type UiStateByType = {
 }
 
 const LOCAL_STORAGE_KEY = 'automatasim:ui-state:v1'
+const JSON_EXPORT_VERSION = 1
 
 function getConnectionAwareStatePositions(
   machine: DeterministicFiniteAutomaton,
@@ -903,6 +905,11 @@ function App() {
         persistedUiConfig?.definitionsByType.turingMachine ?? FUTURE_TEMPLATE,
     },
   })
+  const [transferMessage, setTransferMessage] = useState<string | null>(null)
+  const [transferMessageKind, setTransferMessageKind] = useState<
+    'success' | 'error'
+  >('success')
+  const importFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
     (option) => option.id === selectedAutomatonType,
@@ -927,6 +934,25 @@ function App() {
         currentValue.deterministicFiniteAutomaton,
       ),
     }))
+  }
+
+  function getDefinitionsByTypeFromUiState(value: UiStateByType) {
+    return {
+      deterministicFiniteAutomaton: value.deterministicFiniteAutomaton.definitionText,
+      nondeterministicFiniteAutomaton:
+        value.nondeterministicFiniteAutomaton.definitionText,
+      pushdownAutomaton: value.pushdownAutomaton.definitionText,
+      queueAutomaton: value.queueAutomaton.definitionText,
+      turingMachine: value.turingMachine.definitionText,
+    }
+  }
+
+  function showTransferMessage(
+    kind: 'success' | 'error',
+    message: string,
+  ) {
+    setTransferMessageKind(kind)
+    setTransferMessage(message)
   }
 
   const parseResult = useMemo(() => {
@@ -1075,15 +1101,7 @@ function App() {
 
     const payload = {
       selectedAutomatonType,
-      definitionsByType: {
-        deterministicFiniteAutomaton:
-          uiStateByType.deterministicFiniteAutomaton.definitionText,
-        nondeterministicFiniteAutomaton:
-          uiStateByType.nondeterministicFiniteAutomaton.definitionText,
-        pushdownAutomaton: uiStateByType.pushdownAutomaton.definitionText,
-        queueAutomaton: uiStateByType.queueAutomaton.definitionText,
-        turingMachine: uiStateByType.turingMachine.definitionText,
-      },
+      definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
       deterministicInputString: uiStateByType.deterministicFiniteAutomaton.inputString,
     }
 
@@ -1093,6 +1111,98 @@ function App() {
       // Ignore storage failures (private mode/quota limits).
     }
   }, [selectedAutomatonType, uiStateByType])
+
+  function handleExportJson() {
+    const payload = {
+      version: JSON_EXPORT_VERSION,
+      selectedAutomatonType,
+      definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
+      deterministicInputString: uiStateByType.deterministicFiniteAutomaton.inputString,
+    }
+    const jsonText = JSON.stringify(payload, null, 2)
+    const fileBlob = new Blob([jsonText], { type: 'application/json' })
+    const objectUrl = window.URL.createObjectURL(fileBlob)
+    const anchor = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = 'automatasim-config.json'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    window.URL.revokeObjectURL(objectUrl)
+    showTransferMessage('success', 'Exported JSON configuration.')
+  }
+
+  async function handleImportJsonFile(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFile = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!selectedFile) {
+      return
+    }
+
+    try {
+      const fileText = await selectedFile.text()
+      const parsed = JSON.parse(fileText) as {
+        selectedAutomatonType?: unknown
+        definitionsByType?: Partial<Record<AutomatonType, unknown>>
+        deterministicInputString?: unknown
+      }
+
+      const maybeType = parsed.selectedAutomatonType
+      const isValidType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
+      if (!isValidType || !parsed.definitionsByType) {
+        showTransferMessage('error', 'Invalid config file format.')
+        return
+      }
+
+      const defaultState = getDefaultUiStateByType()
+      const importedState: UiStateByType = {
+        deterministicFiniteAutomaton: {
+          definitionText:
+            typeof parsed.definitionsByType.deterministicFiniteAutomaton === 'string'
+              ? parsed.definitionsByType.deterministicFiniteAutomaton
+              : defaultState.deterministicFiniteAutomaton.definitionText,
+          inputString:
+            typeof parsed.deterministicInputString === 'string'
+              ? parsed.deterministicInputString
+              : '',
+          simulationResult: null,
+          activeStepIndex: -1,
+          isAutoPlaying: false,
+        },
+        nondeterministicFiniteAutomaton: {
+          definitionText:
+            typeof parsed.definitionsByType.nondeterministicFiniteAutomaton === 'string'
+              ? parsed.definitionsByType.nondeterministicFiniteAutomaton
+              : defaultState.nondeterministicFiniteAutomaton.definitionText,
+        },
+        pushdownAutomaton: {
+          definitionText:
+            typeof parsed.definitionsByType.pushdownAutomaton === 'string'
+              ? parsed.definitionsByType.pushdownAutomaton
+              : defaultState.pushdownAutomaton.definitionText,
+        },
+        queueAutomaton: {
+          definitionText:
+            typeof parsed.definitionsByType.queueAutomaton === 'string'
+              ? parsed.definitionsByType.queueAutomaton
+              : defaultState.queueAutomaton.definitionText,
+        },
+        turingMachine: {
+          definitionText:
+            typeof parsed.definitionsByType.turingMachine === 'string'
+              ? parsed.definitionsByType.turingMachine
+              : defaultState.turingMachine.definitionText,
+        },
+      }
+
+      setUiStateByType(importedState)
+      setSelectedAutomatonType(maybeType as AutomatonType)
+      showTransferMessage('success', 'Imported JSON configuration.')
+    } catch {
+      showTransferMessage('error', 'Failed to read JSON file.')
+    }
+  }
 
   function handleStartAutoPlay() {
     if (!canAutoPlay) {
@@ -1174,6 +1284,40 @@ function App() {
             onChange={(event) => handleDefinitionChange(event.target.value)}
             spellCheck={false}
           />
+          <div className="transfer-actions">
+            <button
+              className="action-button"
+              type="button"
+              onClick={handleExportJson}
+            >
+              Export JSON
+            </button>
+            <button
+              className="action-button"
+              type="button"
+              onClick={() => importFileInputRef.current?.click()}
+            >
+              Import JSON
+            </button>
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleImportJsonFile}
+              className="hidden-file-input"
+            />
+          </div>
+          {transferMessage && (
+            <p
+              className={
+                transferMessageKind === 'success'
+                  ? 'transfer-message transfer-message-success'
+                  : 'transfer-message transfer-message-error'
+              }
+            >
+              {transferMessage}
+            </p>
+          )}
 
           {selectedOption.supported && (
             <div className="simulation-controls">

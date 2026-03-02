@@ -116,7 +116,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 ## 6. Persistence and Sharing (Optional but useful)
 
 - [x] Save/load machine config to `localStorage`.
-- [ ] Add import/export JSON for automata definitions.
+- [x] Add import/export JSON for automata definitions.
 - [ ] Validate imported JSON and show useful errors.
 
 ## 7. Quality and Tooling
