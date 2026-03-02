@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="AutomataSim icon">
+  <defs>
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e94560"/>
+      <stop offset="100%" stop-color="#ff6b6b"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="4.5" markerHeight="4.5" refX="4" refY="2.25" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L4.5,2.25 L0,4.5 Z" fill="#ff6b6b"/>
+    </marker>
+  </defs>
+
+  <g fill="none" stroke="#ffffff" stroke-width="6.5" opacity="0.24" stroke-linecap="round">
+    <path d="M34 66 Q50 44 66 39"/>
+    <path d="M72 40 Q87 40 98 56"/>
+    <path d="M34 74 Q52 89 66 91"/>
+    <path d="M72 90 Q88 90 99 75"/>
+  </g>
+
+  <g fill="none" stroke="url(#nodeGrad)" stroke-width="4.2" stroke-linecap="round" marker-end="url(#arrow)">
+    <path d="M34 66 Q50 44 66 39"/>
+    <path d="M72 40 Q87 40 98 56"/>
+    <path d="M34 74 Q52 89 66 91"/>
+    <path d="M72 90 Q88 90 99 75"/>
+  </g>
+
+  <g fill="#ffffff" opacity="0.32">
+    <circle cx="28" cy="70" r="15"/>
+    <circle cx="70" cy="34" r="15"/>
+    <circle cx="70" cy="94" r="15"/>
+    <circle cx="104" cy="66" r="17"/>
+  </g>
+
+  <g fill="url(#nodeGrad)">
+    <circle cx="28" cy="70" r="12"/>
+    <circle cx="70" cy="34" r="12"/>
+    <circle cx="70" cy="94" r="12"/>
+    <circle cx="104" cy="66" r="14"/>
+  </g>
+
+  <g fill="#1a1a2e">
+    <circle cx="28" cy="70" r="6"/>
+    <circle cx="70" cy="34" r="6"/>
+    <circle cx="70" cy="94" r="6"/>
+    <circle cx="104" cy="66" r="7"/>
+  </g>
+</svg>
