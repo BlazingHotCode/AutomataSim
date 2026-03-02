@@ -29,6 +29,24 @@ export interface NondeterministicFiniteAutomaton {
   transitions: NondeterministicTransition[]
 }
 
+export interface PushdownTransition {
+  from: StateId
+  inputSymbol: SymbolToken
+  popSymbol: SymbolToken
+  to: StateId
+  pushSymbols: SymbolToken[]
+}
+
+export interface PushdownAutomaton {
+  states: StateId[]
+  alphabet: SymbolToken[]
+  stackAlphabet: SymbolToken[]
+  startState: StateId
+  acceptStates: StateId[]
+  stackStartSymbol: SymbolToken
+  transitions: PushdownTransition[]
+}
+
 export interface ParseResult<T> {
   value: T | null
   errors: string[]

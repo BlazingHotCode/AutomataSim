@@ -52,14 +52,14 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 2A. Post-MVP Implementation Backlog (Not Done)
 
-- [ ] 2A.1 Implement Nondeterministic Finite Automaton
+- [x] 2A.1 Implement Nondeterministic Finite Automaton
   - [x] 2A.1.1 Add types + parser mode.
   - [x] 2A.1.2 Implement epsilon-closure simulation + trace.
   - [x] 2A.1.3 Add renderer support for multiple active states.
   - [x] 2A.1.4 Add engine and parser tests.
   - [x] 2A.1.5 Wire simulation UI (Run + step playback + trace panel).
 - [ ] 2A.2 Implement Pushdown Automaton
-  - [ ] 2A.2.1 Add model for stack alphabet and push/pop transitions.
+  - [x] 2A.2.1 Add model for stack alphabet and push/pop transitions.
   - [ ] 2A.2.2 Implement step simulation with stack snapshots.
   - [ ] 2A.2.3 Add stack UI visualization.
   - [ ] 2A.2.4 Add engine and parser tests.
