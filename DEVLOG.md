@@ -55,3 +55,26 @@
 
 - Implement Deterministic Finite Automaton simulation engine (`simulateDFA`).
 - Add input string execution (accept/reject + step trace).
+
+## 2026-03-02 (Entry 2)
+
+### DFA Simulation UI Integration
+
+- Connected parsed Deterministic Finite Automaton definitions to `simulateDFA` in `src/App.tsx`.
+- Added simulation input controls (`input string` + `Run`).
+- Added simulation result output:
+  - Accept/Reject status
+  - final state
+  - simulation/validation errors (when present)
+- Added related simulation styles in `src/App.css`.
+- Updated TODO to mark immediate Step 5 complete.
+
+### TODO Clarification
+
+- Added explicit Simulation UI task: `Allow simulating step by step.`
+- Next immediate implementation target: TODO Step 6 (interactive step runner).
+
+### Validation Runs
+
+- `pnpm lint` passed
+- `pnpm test` passed
