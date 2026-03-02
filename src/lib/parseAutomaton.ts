@@ -6,6 +6,12 @@ import type {
   ParseResult,
 } from '../types/automaton'
 
+const EPSILON_SYMBOLS = new Set(['ε', 'epsilon', 'eps', 'e'])
+
+function isEpsilonSymbol(symbol: string): boolean {
+  return EPSILON_SYMBOLS.has(symbol)
+}
+
 function parseCsv(value: string): string[] {
   return value
     .split(',')
@@ -195,8 +201,10 @@ export function parseNondeterministicFiniteAutomaton(
     if (!baseValue.stateSet.has(from)) {
       errors.push(`Transition source "${from}" is not in states.`)
     }
-    if (!baseValue.alphabetSet.has(symbol)) {
-      errors.push(`Transition symbol "${symbol}" is not in alphabet.`)
+    if (!baseValue.alphabetSet.has(symbol) && !isEpsilonSymbol(symbol)) {
+      errors.push(
+        `Transition symbol "${symbol}" is not in alphabet or epsilon.`,
+      )
     }
     if (to.length === 0) {
       errors.push(`Transition target list must not be empty for "${line}".`)

@@ -53,7 +53,8 @@ alphabet: 0,1
 start: q0
 accept: q2
 transitions:
-q0,0 -> q0|q1
+q0,eps -> q1
+q0,0 -> q0
 q0,1 -> q0
 q1,0 -> q2
 q1,1 -> q2

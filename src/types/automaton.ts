@@ -54,3 +54,19 @@ export interface DeterministicSimulationResult {
   trace: DeterministicSimulationStep[]
   errors: string[]
 }
+
+export interface NondeterministicSimulationStep {
+  index: number
+  symbol: SymbolToken
+  fromStates: StateId[]
+  toStates: StateId[]
+}
+
+export interface NondeterministicSimulationResult {
+  accepted: boolean
+  inputSymbols: SymbolToken[]
+  startStates: StateId[]
+  finalStates: StateId[]
+  trace: NondeterministicSimulationStep[]
+  errors: string[]
+}

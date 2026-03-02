@@ -446,7 +446,7 @@ function App() {
             {selectedAutomatonType === 'deterministicFiniteAutomaton'
               ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
               : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB`'
+                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB` (epsilon accepted as `eps`, `epsilon`, or `ε`).'
                 : `The ${selectedOption.label} parser format is not implemented yet.`}
           </p>
           <textarea
