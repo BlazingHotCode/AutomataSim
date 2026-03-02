@@ -104,3 +104,26 @@
   - `Allow simulating step by step.`
   - `Show step-by-step trace (current state after each symbol).`
   - Immediate Next Action `Step 6`.
+
+## 2026-03-02 (Entry 4)
+
+### `App.tsx` Modularization Refactor
+
+- Refactored large UI sections out of `src/App.tsx` into focused components:
+  - `src/components/AppHero.tsx`
+  - `src/components/AutomatonEditorPanel.tsx`
+  - `src/components/AutomatonVisualizationPanel.tsx`
+- Updated `src/App.tsx` to act as an orchestration layer for state + handlers while delegating render blocks to the new components.
+- Added shared handler helpers in `src/App.tsx` to reduce repeated per-automaton update logic:
+  - `updateSelectedUiState`
+  - `handleSimulationInputChange`
+  - `handlePreviousStep`
+  - `handleNextStep`
+  - `handlePauseAutoPlay`
+- Consolidated simulation panel props into a single `simulationPanelProps` object passed to the visualization component.
+- Switched `App` declaration to `React.FC` typing for consistency with the extracted components.
+
+### Validation Run
+
+- Verified refactor with production build:
+  - `npm run build` passed (`tsc -b` + `vite build`).

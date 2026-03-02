@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, FC } from 'react'
 import './App.css'
-import AutomatonGraph from './components/AutomatonGraph'
-import SimulationControls from './components/SimulationControls'
-import SimulationResultPanel from './components/SimulationResultPanel'
-import TransferControls from './components/TransferControls'
+import AppHero from './components/AppHero'
+import AutomatonEditorPanel from './components/AutomatonEditorPanel'
+import AutomatonVisualizationPanel from './components/AutomatonVisualizationPanel'
 import {
   buildUiStateFromImportedPayload,
   createExportPayload,
@@ -112,7 +111,7 @@ function flattenTuringForGraph(machine: TuringMachine) {
   }
 }
 
-function App() {
+const App: FC = () => {
   const [persistedUiConfig] = useState(loadPersistedUiConfig)
   const [selectedAutomatonType, setSelectedAutomatonType] =
     useState<AutomatonType>(
@@ -257,6 +256,43 @@ function App() {
       ...currentValue,
       turingMachine: updater(currentValue.turingMachine),
     }))
+  }
+
+  function updateSelectedUiState(
+    updater: (
+      currentValue: UiStateByType[AutomatonType],
+    ) => UiStateByType[AutomatonType],
+  ) {
+    if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+      updateDeterministicUiState(
+        (currentValue) =>
+          updater(currentValue) as UiStateByType['deterministicFiniteAutomaton'],
+      )
+      return
+    }
+    if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+      updateNondeterministicUiState(
+        (currentValue) =>
+          updater(currentValue) as UiStateByType['nondeterministicFiniteAutomaton'],
+      )
+      return
+    }
+    if (selectedAutomatonType === 'pushdownAutomaton') {
+      updatePushdownUiState(
+        (currentValue) =>
+          updater(currentValue) as UiStateByType['pushdownAutomaton'],
+      )
+      return
+    }
+    if (selectedAutomatonType === 'queueAutomaton') {
+      updateQueueUiState(
+        (currentValue) => updater(currentValue) as UiStateByType['queueAutomaton'],
+      )
+      return
+    }
+    updateTuringUiState(
+      (currentValue) => updater(currentValue) as UiStateByType['turingMachine'],
+    )
   }
 
   function showTransferMessage(kind: 'success' | 'error', message: string) {
@@ -981,316 +1017,121 @@ function App() {
     }
   }
 
+  const canRunSimulation = Boolean(
+    selectedAutomatonType === 'deterministicFiniteAutomaton'
+      ? deterministicParseResult?.value
+      : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+        ? nondeterministicParseResult?.value
+        : selectedAutomatonType === 'pushdownAutomaton'
+          ? pushdownParseResult?.value
+          : selectedAutomatonType === 'queueAutomaton'
+            ? queueParseResult?.value
+            : turingParseResult?.value,
+  )
+
+  function handleSimulationInputChange(value: string) {
+    updateSelectedUiState((currentValue) => ({
+      ...currentValue,
+      inputString: value,
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
+    }))
+  }
+
+  function handlePreviousStep() {
+    updateSelectedUiState((currentValue) => ({
+      ...currentValue,
+      activeStepIndex: currentValue.activeStepIndex - 1,
+    }))
+  }
+
+  function handleNextStep() {
+    updateSelectedUiState((currentValue) => ({
+      ...currentValue,
+      activeStepIndex: currentValue.activeStepIndex + 1,
+    }))
+  }
+
+  function handlePauseAutoPlay() {
+    updateSelectedUiState((currentValue) => ({
+      ...currentValue,
+      isAutoPlaying: false,
+    }))
+  }
+
+  const simulationPanelProps =
+    selectedOption.supported && simulationResult
+      ? {
+          simulationResult,
+          activeStepIndex,
+          totalTraceSteps,
+          activeStateLabel,
+          canStepBackward,
+          canStepForward,
+          canAutoPlay,
+          isAutoPlaying,
+          onPrevious: handlePreviousStep,
+          onNext: handleNextStep,
+          onAutoPlay: handleStartAutoPlay,
+          onPause: handlePauseAutoPlay,
+          onReset: handleResetSimulationProgress,
+        }
+      : null
+
   return (
     <main className={`app-shell theme-${theme}`}>
-      <section className="hero">
-        <div className="hero-top-row">
-          <p className="eyebrow">AutomataSim</p>
-          <button
-            className="theme-toggle"
-            type="button"
-            onClick={() =>
-              setTheme((value) => (value === 'dark' ? 'light' : 'dark'))
-            }
-          >
-            {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-          </button>
-        </div>
-        <h1>Text-to-Automaton Renderer</h1>
-        <p className="subtitle">
-          Define a Deterministic Finite Automaton as text, and the diagram is
-          rendered automatically.
-        </p>
-      </section>
+      <AppHero
+        theme={theme}
+        onToggleTheme={() =>
+          setTheme((value) => (value === 'dark' ? 'light' : 'dark'))
+        }
+      />
 
       <section className="panel editor-grid">
-        <div>
-          <label className="selector-label" htmlFor="automatonType">
-            Automaton Type
-          </label>
-          <select
-            id="automatonType"
-            className="type-selector"
-            value={selectedAutomatonType}
-            onChange={(event) =>
-              setSelectedAutomatonType(event.target.value as AutomatonType)
-            }
-          >
-            {AUTOMATON_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        <AutomatonEditorPanel
+          selectedAutomatonType={selectedAutomatonType}
+          selectedOption={selectedOption}
+          automatonOptions={AUTOMATON_OPTIONS}
+          definitionText={definitionText}
+          onAutomatonTypeChange={setSelectedAutomatonType}
+          onDefinitionChange={handleDefinitionChange}
+          onExport={handleExportJson}
+          onTriggerImport={() => importFileInputRef.current?.click()}
+          onImportFile={handleImportJsonFile}
+          importFileInputRef={importFileInputRef}
+          transferMessage={transferMessage}
+          transferMessageKind={transferMessageKind}
+          transferErrorDetails={transferErrorDetails}
+          showSimulationControls={selectedOption.supported}
+          inputString={inputString}
+          onInputChange={handleSimulationInputChange}
+          onRun={handleRunSimulation}
+          canRun={canRunSimulation}
+          onResetProgress={handleResetSimulationProgress}
+          onClear={handleClearSimulation}
+          disableResetProgress={
+            simulationResult === null || (activeStepIndex < 0 && !isAutoPlaying)
+          }
+          disableClear={
+            inputString.length === 0 &&
+            simulationResult === null &&
+            activeStepIndex < 0 &&
+            !isAutoPlaying
+          }
+          parseErrors={activeParseErrors}
+        />
 
-          <h2>Automaton Definition</h2>
-          <p className="hint">
-            {selectedAutomatonType === 'deterministicFiniteAutomaton'
-              ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
-              : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB` (epsilon accepted as `e`, `eps`, `epsilon`, or `ε`).'
-                : selectedAutomatonType === 'pushdownAutomaton'
-                  ? 'Format: add `stackAlphabet` and `stackStart`. Transition syntax: `source,input,pop -> target,pushA|pushB` (use `e`/`eps`/`epsilon`/`ε` for epsilon).'
-                  : selectedAutomatonType === 'queueAutomaton'
-                    ? 'Format: add `queueAlphabet` and `queueStart`. Transition syntax: `source,input,dequeue -> target,enqueue` (epsilon accepted as `e`/`eps`/`epsilon`/`ε`).'
-                    : selectedAutomatonType === 'turingMachine'
-                      ? 'Format: add `tapeAlphabet` and `blank`. Transition syntax: `source,read -> target,write,Move` where Move is L/R/S.'
-                      : `The ${selectedOption.label} parser format is not implemented yet.`}
-          </p>
-          <textarea
-            className="definition-input"
-            value={definitionText}
-            onChange={(event) => handleDefinitionChange(event.target.value)}
-            spellCheck={false}
-          />
-
-          <TransferControls
-            onExport={handleExportJson}
-            onTriggerImport={() => importFileInputRef.current?.click()}
-            onImportFile={handleImportJsonFile}
-            importFileInputRef={importFileInputRef}
-            transferMessage={transferMessage}
-            transferMessageKind={transferMessageKind}
-            transferErrorDetails={transferErrorDetails}
-          />
-
-          {selectedOption.supported && (
-            <SimulationControls
-              inputString={inputString}
-              onInputChange={(value) => {
-                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
-                  updateDeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    inputString: value,
-                    simulationResult: null,
-                    activeStepIndex: -1,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (
-                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ) {
-                  updateNondeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    inputString: value,
-                    simulationResult: null,
-                    activeStepIndex: -1,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'pushdownAutomaton') {
-                  updatePushdownUiState((currentValue) => ({
-                    ...currentValue,
-                    inputString: value,
-                    simulationResult: null,
-                    activeStepIndex: -1,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'queueAutomaton') {
-                  updateQueueUiState((currentValue) => ({
-                    ...currentValue,
-                    inputString: value,
-                    simulationResult: null,
-                    activeStepIndex: -1,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'turingMachine') {
-                  updateTuringUiState((currentValue) => ({
-                    ...currentValue,
-                    inputString: value,
-                    simulationResult: null,
-                    activeStepIndex: -1,
-                    isAutoPlaying: false,
-                  }))
-                }
-              }}
-              onRun={handleRunSimulation}
-              canRun={Boolean(
-                selectedAutomatonType === 'deterministicFiniteAutomaton'
-                  ? deterministicParseResult?.value
-                  : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                    ? nondeterministicParseResult?.value
-                    : selectedAutomatonType === 'pushdownAutomaton'
-                      ? pushdownParseResult?.value
-                      : selectedAutomatonType === 'queueAutomaton'
-                        ? queueParseResult?.value
-                        : turingParseResult?.value,
-              )}
-              onResetProgress={handleResetSimulationProgress}
-              onClear={handleClearSimulation}
-              disableResetProgress={
-                simulationResult === null ||
-                (activeStepIndex < 0 && !isAutoPlaying)
-              }
-              disableClear={
-                inputString.length === 0 &&
-                simulationResult === null &&
-                activeStepIndex < 0 &&
-                !isAutoPlaying
-              }
-              parseErrors={activeParseErrors}
-            />
-          )}
-        </div>
-
-        <div>
-          <h2>Rendered Automaton</h2>
-          {selectedOption.supported && graphMachine ? (
-            <AutomatonGraph
-              machine={graphMachine}
-              currentStates={activeStates}
-              traversedStates={traversedStates}
-              traversedTransitionKeys={traversedTransitionKeys}
-              activeTransitionKey={activeTransitionKey}
-            />
-          ) : selectedOption.supported ? (
-            <div className="error-box">
-              <h3>Definition Errors</h3>
-              <ul>
-                {activeParseErrors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="info-box">
-              <h3>Coming Soon</h3>
-              <p>{selectedOption.label} support is planned in the roadmap.</p>
-            </div>
-          )}
-
-          {selectedOption.supported && simulationResult && (
-            <div className="graph-legend">
-              <span className="legend-item">
-                <span className="legend-swatch legend-current" />
-                Current state/step
-              </span>
-              <span className="legend-item">
-                <span className="legend-swatch legend-path" />
-                Path taken
-              </span>
-            </div>
-          )}
-
-          {selectedOption.supported && simulationResult && (
-            <SimulationResultPanel
-              simulationResult={simulationResult}
-              activeStepIndex={activeStepIndex}
-              totalTraceSteps={totalTraceSteps}
-              activeStateLabel={activeStateLabel}
-              canStepBackward={canStepBackward}
-              canStepForward={canStepForward}
-              canAutoPlay={canAutoPlay}
-              isAutoPlaying={isAutoPlaying}
-              onPrevious={() => {
-                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
-                  updateDeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex - 1,
-                  }))
-                }
-                if (
-                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ) {
-                  updateNondeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex - 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'pushdownAutomaton') {
-                  updatePushdownUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex - 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'queueAutomaton') {
-                  updateQueueUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex - 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'turingMachine') {
-                  updateTuringUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex - 1,
-                  }))
-                }
-              }}
-              onNext={() => {
-                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
-                  updateDeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex + 1,
-                  }))
-                }
-                if (
-                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ) {
-                  updateNondeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex + 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'pushdownAutomaton') {
-                  updatePushdownUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex + 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'queueAutomaton') {
-                  updateQueueUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex + 1,
-                  }))
-                }
-                if (selectedAutomatonType === 'turingMachine') {
-                  updateTuringUiState((currentValue) => ({
-                    ...currentValue,
-                    activeStepIndex: currentValue.activeStepIndex + 1,
-                  }))
-                }
-              }}
-              onAutoPlay={handleStartAutoPlay}
-              onPause={() => {
-                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
-                  updateDeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (
-                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ) {
-                  updateNondeterministicUiState((currentValue) => ({
-                    ...currentValue,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'pushdownAutomaton') {
-                  updatePushdownUiState((currentValue) => ({
-                    ...currentValue,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'queueAutomaton') {
-                  updateQueueUiState((currentValue) => ({
-                    ...currentValue,
-                    isAutoPlaying: false,
-                  }))
-                }
-                if (selectedAutomatonType === 'turingMachine') {
-                  updateTuringUiState((currentValue) => ({
-                    ...currentValue,
-                    isAutoPlaying: false,
-                  }))
-                }
-              }}
-              onReset={handleResetSimulationProgress}
-            />
-          )}
-        </div>
+        <AutomatonVisualizationPanel
+          selectedOption={selectedOption}
+          graphMachine={graphMachine}
+          activeParseErrors={activeParseErrors}
+          activeStates={activeStates}
+          traversedStates={traversedStates}
+          traversedTransitionKeys={traversedTransitionKeys}
+          activeTransitionKey={activeTransitionKey}
+          simulationPanelProps={simulationPanelProps}
+        />
       </section>
     </main>
   )
