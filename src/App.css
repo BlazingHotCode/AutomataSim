@@ -19,6 +19,13 @@
   box-shadow: 0 16px 40px rgba(7, 24, 54, 0.35);
 }
 
+.hero-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .eyebrow {
   margin: 0;
   text-transform: uppercase;
@@ -32,6 +39,22 @@
   margin: 0.45rem 0 0;
   font-size: clamp(1.7rem, 4vw, 2.4rem);
   line-height: 1.15;
+}
+
+.theme-toggle {
+  border: 1px solid rgba(233, 244, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #edf6ff;
+  background: rgba(10, 30, 63, 0.4);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: rgba(10, 30, 63, 0.55);
 }
 
 .subtitle {
@@ -419,4 +442,64 @@
     grid-template-columns: 0.95fr 1.05fr;
     align-items: start;
   }
+}
+
+.app-shell.theme-dark .panel {
+  background: #121c2f;
+  border-color: #2a3c59;
+  color: #e4edf9;
+}
+
+.app-shell.theme-dark .hint {
+  color: #b0c2dd;
+}
+
+.app-shell.theme-dark .selector-label {
+  color: #d8e6fb;
+}
+
+.app-shell.theme-dark .type-selector,
+.app-shell.theme-dark .definition-input,
+.app-shell.theme-dark .string-input,
+.app-shell.theme-dark .step-button,
+.app-shell.theme-dark .action-button {
+  background: #0d1524;
+  border-color: #314867;
+  color: #d9e8fd;
+}
+
+.app-shell.theme-dark .simulation-error-box {
+  background: #2a1216;
+  border-color: #7f4146;
+}
+
+.app-shell.theme-dark .simulation-error-box h3,
+.app-shell.theme-dark .simulation-error-box p,
+.app-shell.theme-dark .simulation-error-box ul {
+  color: #ffd4d7;
+}
+
+.app-shell.theme-dark .transfer-message-success {
+  color: #bdecc9;
+  background: #112b1b;
+  border-color: #2d6740;
+}
+
+.app-shell.theme-dark .transfer-message-error {
+  color: #ffcfd3;
+  background: #2a1317;
+  border-color: #7f4449;
+}
+
+.app-shell.theme-dark .automaton-canvas {
+  background: #0c1526;
+  border-color: #2a3c59;
+}
+
+.app-shell.theme-dark .graph-legend {
+  color: #d2e0f4;
+}
+
+.app-shell.theme-dark .step-runner {
+  border-top-color: rgba(214, 231, 255, 0.2);
 }

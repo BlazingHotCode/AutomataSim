@@ -6,17 +6,26 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #152039;
-  background: #eaf2fb;
+  color: #dfeafb;
+  background: #0a1220;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(160deg, #edf4fd 0%, #dbe8fb 100%);
+  background: radial-gradient(circle at 12% 12%, #10203f, #070d18 60%, #050a13);
 }
 
 #root {
   min-height: 100vh;
+}
+
+:root[data-theme='light'] {
+  color: #152039;
+  background: #eaf2fb;
+}
+
+:root[data-theme='light'] body {
+  background: linear-gradient(160deg, #edf4fd 0%, #dbe8fb 100%);
 }

@@ -50,6 +50,8 @@ import type {
   TuringSimulationResult,
 } from './types/automaton'
 
+const THEME_STORAGE_KEY = 'automatasim:theme'
+
 function flattenNondeterministicForGraph(
   machine: NondeterministicFiniteAutomaton,
 ) {
@@ -170,6 +172,13 @@ function App() {
     'success' | 'error'
   >('success')
   const [transferErrorDetails, setTransferErrorDetails] = useState<string[]>([])
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') {
+      return 'dark'
+    }
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    return storedTheme === 'light' ? 'light' : 'dark'
+  })
   const importFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
@@ -739,6 +748,19 @@ function App() {
     }
   }, [selectedAutomatonType, uiStateByType])
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+      } catch {
+        // Ignore storage failures (private mode/quota limits).
+      }
+    }
+  }, [theme])
+
   function handleExportJson() {
     const payload = createExportPayload(selectedAutomatonType, uiStateByType)
     const jsonText = JSON.stringify(payload, null, 2)
@@ -960,9 +982,20 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell theme-${theme}`}>
       <section className="hero">
-        <p className="eyebrow">AutomataSim</p>
+        <div className="hero-top-row">
+          <p className="eyebrow">AutomataSim</p>
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={() =>
+              setTheme((value) => (value === 'dark' ? 'light' : 'dark'))
+            }
+          >
+            {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+          </button>
+        </div>
         <h1>Text-to-Automaton Renderer</h1>
         <p className="subtitle">
           Define a Deterministic Finite Automaton as text, and the diagram is
