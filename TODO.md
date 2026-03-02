@@ -97,7 +97,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [x] Validate text input and show explicit parse/validation errors.
 - [x] Render parsed automaton as a state/transition diagram.
 - [x] Replace fixed/circular node layout with connection-aware positioning based on graph structure.
-- [ ] Keep UI state normalized so it maps 1:1 to automaton types.
+- [x] Keep UI state normalized so it maps 1:1 to automaton types.
 
 ## 5. Simulation UI
 

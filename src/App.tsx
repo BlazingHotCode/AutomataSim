@@ -63,6 +63,26 @@ q2,1 -> q2`
 const FUTURE_TEMPLATE = `# Format for this automaton type will be added here.
 # This mode is planned but not implemented yet.`
 
+interface DeterministicUiState {
+  definitionText: string
+  inputString: string
+  simulationResult: DeterministicSimulationResult | null
+  activeStepIndex: number
+  isAutoPlaying: boolean
+}
+
+interface PlannedUiState {
+  definitionText: string
+}
+
+type UiStateByType = {
+  deterministicFiniteAutomaton: DeterministicUiState
+  nondeterministicFiniteAutomaton: PlannedUiState
+  pushdownAutomaton: PlannedUiState
+  queueAutomaton: PlannedUiState
+  turingMachine: PlannedUiState
+}
+
 function getConnectionAwareStatePositions(
   machine: DeterministicFiniteAutomaton,
 ) {
@@ -763,25 +783,53 @@ function AutomatonGraph({
 function App() {
   const [selectedAutomatonType, setSelectedAutomatonType] =
     useState<AutomatonType>('deterministicFiniteAutomaton')
-  const [definitionsByType, setDefinitionsByType] = useState<
-    Record<AutomatonType, string>
-  >({
-    deterministicFiniteAutomaton: DETERMINISTIC_SAMPLE,
-    nondeterministicFiniteAutomaton: FUTURE_TEMPLATE,
-    pushdownAutomaton: FUTURE_TEMPLATE,
-    queueAutomaton: FUTURE_TEMPLATE,
-    turingMachine: FUTURE_TEMPLATE,
+  const [uiStateByType, setUiStateByType] = useState<UiStateByType>({
+    deterministicFiniteAutomaton: {
+      definitionText: DETERMINISTIC_SAMPLE,
+      inputString: '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
+    },
+    nondeterministicFiniteAutomaton: {
+      definitionText: FUTURE_TEMPLATE,
+    },
+    pushdownAutomaton: {
+      definitionText: FUTURE_TEMPLATE,
+    },
+    queueAutomaton: {
+      definitionText: FUTURE_TEMPLATE,
+    },
+    turingMachine: {
+      definitionText: FUTURE_TEMPLATE,
+    },
   })
-  const [inputString, setInputString] = useState('')
-  const [simulationResult, setSimulationResult] =
-    useState<DeterministicSimulationResult | null>(null)
-  const [activeStepIndex, setActiveStepIndex] = useState(-1)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
     (option) => option.id === selectedAutomatonType,
   )!
-  const definitionText = definitionsByType[selectedAutomatonType]
+  const selectedUiState = uiStateByType[selectedAutomatonType]
+  const definitionText = selectedUiState.definitionText
+  const deterministicUiState =
+    selectedAutomatonType === 'deterministicFiniteAutomaton'
+      ? uiStateByType.deterministicFiniteAutomaton
+      : null
+  const inputString = deterministicUiState?.inputString ?? ''
+  const simulationResult = deterministicUiState?.simulationResult ?? null
+  const activeStepIndex = deterministicUiState?.activeStepIndex ?? -1
+  const isAutoPlaying = deterministicUiState?.isAutoPlaying ?? false
+
+  function updateDeterministicUiState(
+    updater: (currentValue: DeterministicUiState) => DeterministicUiState,
+  ) {
+    setUiStateByType((currentValue) => ({
+      ...currentValue,
+      deterministicFiniteAutomaton: updater(
+        currentValue.deterministicFiniteAutomaton,
+      ),
+    }))
+  }
+
   const parseResult = useMemo(() => {
     if (selectedAutomatonType !== 'deterministicFiniteAutomaton') {
       return null
@@ -790,13 +838,53 @@ function App() {
   }, [definitionText, selectedAutomatonType])
 
   function handleDefinitionChange(nextDefinition: string) {
-    setDefinitionsByType((currentValue) => ({
-      ...currentValue,
-      [selectedAutomatonType]: nextDefinition,
-    }))
-    setSimulationResult(null)
-    setActiveStepIndex(-1)
-    setIsAutoPlaying(false)
+    setUiStateByType((currentValue) => {
+      switch (selectedAutomatonType) {
+        case 'deterministicFiniteAutomaton':
+          return {
+            ...currentValue,
+            deterministicFiniteAutomaton: {
+              ...currentValue.deterministicFiniteAutomaton,
+              definitionText: nextDefinition,
+              simulationResult: null,
+              activeStepIndex: -1,
+              isAutoPlaying: false,
+            },
+          }
+        case 'nondeterministicFiniteAutomaton':
+          return {
+            ...currentValue,
+            nondeterministicFiniteAutomaton: {
+              ...currentValue.nondeterministicFiniteAutomaton,
+              definitionText: nextDefinition,
+            },
+          }
+        case 'pushdownAutomaton':
+          return {
+            ...currentValue,
+            pushdownAutomaton: {
+              ...currentValue.pushdownAutomaton,
+              definitionText: nextDefinition,
+            },
+          }
+        case 'queueAutomaton':
+          return {
+            ...currentValue,
+            queueAutomaton: {
+              ...currentValue.queueAutomaton,
+              definitionText: nextDefinition,
+            },
+          }
+        case 'turingMachine':
+          return {
+            ...currentValue,
+            turingMachine: {
+              ...currentValue.turingMachine,
+              definitionText: nextDefinition,
+            },
+          }
+      }
+    })
   }
 
   function handleRunSimulation() {
@@ -805,16 +893,22 @@ function App() {
     }
 
     if (!parseResult?.value) {
-      setSimulationResult(null)
-      setActiveStepIndex(-1)
-      setIsAutoPlaying(false)
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
+      }))
       return
     }
 
     const nextResult = simulateDFA(parseResult.value, inputString)
-    setSimulationResult(nextResult)
-    setActiveStepIndex(nextResult.trace.length - 1)
-    setIsAutoPlaying(false)
+    updateDeterministicUiState((currentValue) => ({
+      ...currentValue,
+      simulationResult: nextResult,
+      activeStepIndex: nextResult.trace.length - 1,
+      isAutoPlaying: false,
+    }))
   }
 
   const totalTraceSteps = simulationResult?.trace.length ?? 0
@@ -860,13 +954,15 @@ function App() {
     }
 
     const timer = window.setTimeout(() => {
-      setActiveStepIndex((value) => {
+      updateDeterministicUiState((currentValue) => {
+        const value = currentValue.activeStepIndex
         const maxIndex = simulationResult.trace.length - 1
         const nextValue = Math.min(value + 1, maxIndex)
-        if (nextValue >= maxIndex) {
-          setIsAutoPlaying(false)
+        return {
+          ...currentValue,
+          activeStepIndex: nextValue,
+          isAutoPlaying: nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
         }
-        return nextValue
       })
     }, 700)
 
@@ -879,21 +975,35 @@ function App() {
     }
 
     if (activeStepIndex >= totalTraceSteps - 1) {
-      setActiveStepIndex(-1)
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        activeStepIndex: -1,
+        isAutoPlaying: true,
+      }))
+      return
     }
-    setIsAutoPlaying(true)
+    updateDeterministicUiState((currentValue) => ({
+      ...currentValue,
+      isAutoPlaying: true,
+    }))
   }
 
   function handleResetSimulationProgress() {
-    setIsAutoPlaying(false)
-    setActiveStepIndex(-1)
+    updateDeterministicUiState((currentValue) => ({
+      ...currentValue,
+      isAutoPlaying: false,
+      activeStepIndex: -1,
+    }))
   }
 
   function handleClearSimulation() {
-    setIsAutoPlaying(false)
-    setActiveStepIndex(-1)
-    setSimulationResult(null)
-    setInputString('')
+    updateDeterministicUiState((currentValue) => ({
+      ...currentValue,
+      isAutoPlaying: false,
+      activeStepIndex: -1,
+      simulationResult: null,
+      inputString: '',
+    }))
   }
 
   return (
@@ -916,12 +1026,9 @@ function App() {
             id="automatonType"
             className="type-selector"
             value={selectedAutomatonType}
-            onChange={(event) => {
+            onChange={(event) =>
               setSelectedAutomatonType(event.target.value as AutomatonType)
-              setSimulationResult(null)
-              setActiveStepIndex(-1)
-              setIsAutoPlaying(false)
-            }}
+            }
           >
             {AUTOMATON_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
@@ -955,10 +1062,13 @@ function App() {
                 type="text"
                 value={inputString}
                 onChange={(event) => {
-                  setInputString(event.target.value)
-                  setSimulationResult(null)
-                  setActiveStepIndex(-1)
-                  setIsAutoPlaying(false)
+                  updateDeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: event.target.value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
                 }}
                 placeholder="Example: 10101 or a b a"
               />
@@ -1104,7 +1214,12 @@ function App() {
                   <button
                     className="step-button"
                     type="button"
-                    onClick={() => setActiveStepIndex((value) => value - 1)}
+                    onClick={() =>
+                      updateDeterministicUiState((currentValue) => ({
+                        ...currentValue,
+                        activeStepIndex: currentValue.activeStepIndex - 1,
+                      }))
+                    }
                     disabled={!canStepBackward || isAutoPlaying}
                   >
                     Previous
@@ -1112,7 +1227,12 @@ function App() {
                   <button
                     className="step-button"
                     type="button"
-                    onClick={() => setActiveStepIndex((value) => value + 1)}
+                    onClick={() =>
+                      updateDeterministicUiState((currentValue) => ({
+                        ...currentValue,
+                        activeStepIndex: currentValue.activeStepIndex + 1,
+                      }))
+                    }
                     disabled={!canStepForward || isAutoPlaying}
                   >
                     Next
@@ -1128,7 +1248,12 @@ function App() {
                   <button
                     className="step-button"
                     type="button"
-                    onClick={() => setIsAutoPlaying(false)}
+                    onClick={() =>
+                      updateDeterministicUiState((currentValue) => ({
+                        ...currentValue,
+                        isAutoPlaying: false,
+                      }))
+                    }
                     disabled={!isAutoPlaying}
                   >
                     Pause
