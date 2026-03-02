@@ -88,3 +88,104 @@ export interface NondeterministicSimulationResult {
   trace: NondeterministicSimulationStep[]
   errors: string[]
 }
+
+export interface PushdownSimulationStep {
+  index: number
+  inputSymbol: SymbolToken
+  fromState: StateId
+  toState: StateId
+  popSymbol: SymbolToken
+  pushSymbols: SymbolToken[]
+  stackBefore: SymbolToken[]
+  stackAfter: SymbolToken[]
+}
+
+export interface PushdownSimulationResult {
+  accepted: boolean
+  inputSymbols: SymbolToken[]
+  startState: StateId
+  finalState: StateId
+  trace: PushdownSimulationStep[]
+  errors: string[]
+}
+
+export type TuringHeadMove = 'L' | 'R' | 'S'
+
+export interface TuringTransition {
+  from: StateId
+  readSymbol: SymbolToken
+  to: StateId
+  writeSymbol: SymbolToken
+  move: TuringHeadMove
+}
+
+export interface TuringMachine {
+  states: StateId[]
+  alphabet: SymbolToken[]
+  tapeAlphabet: SymbolToken[]
+  blankSymbol: SymbolToken
+  startState: StateId
+  acceptStates: StateId[]
+  transitions: TuringTransition[]
+}
+
+export interface TuringSimulationStep {
+  index: number
+  fromState: StateId
+  toState: StateId
+  readSymbol: SymbolToken
+  writeSymbol: SymbolToken
+  move: TuringHeadMove
+  headBefore: number
+  headAfter: number
+  tapeBefore: SymbolToken[]
+  tapeAfter: SymbolToken[]
+}
+
+export interface TuringSimulationResult {
+  accepted: boolean
+  inputSymbols: SymbolToken[]
+  startState: StateId
+  finalState: StateId
+  trace: TuringSimulationStep[]
+  haltedReason: 'accept' | 'reject' | 'step_limit'
+  errors: string[]
+}
+
+export interface QueueTransition {
+  from: StateId
+  inputSymbol: SymbolToken
+  dequeueSymbol: SymbolToken
+  to: StateId
+  enqueueSymbol: SymbolToken
+}
+
+export interface QueueAutomaton {
+  states: StateId[]
+  alphabet: SymbolToken[]
+  queueAlphabet: SymbolToken[]
+  queueStartSymbol: SymbolToken
+  startState: StateId
+  acceptStates: StateId[]
+  transitions: QueueTransition[]
+}
+
+export interface QueueSimulationStep {
+  index: number
+  inputSymbol: SymbolToken
+  fromState: StateId
+  toState: StateId
+  dequeueSymbol: SymbolToken
+  enqueueSymbol: SymbolToken
+  queueBefore: SymbolToken[]
+  queueAfter: SymbolToken[]
+}
+
+export interface QueueSimulationResult {
+  accepted: boolean
+  inputSymbols: SymbolToken[]
+  startState: StateId
+  finalState: StateId
+  trace: QueueSimulationStep[]
+  errors: string[]
+}

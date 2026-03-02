@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   parseDeterministicFiniteAutomaton,
   parseNondeterministicFiniteAutomaton,
+  parsePushdownAutomaton,
+  parseQueueAutomaton,
+  parseTuringMachine,
 } from './parseAutomaton'
 
 describe('parseAutomaton', () => {
@@ -67,5 +70,58 @@ q0,1 -> q1`
     expect(result.errors).toContain(
       'Transition symbol "x" is not in alphabet or epsilon.',
     )
+  })
+
+  it('parses pushdown automaton definitions', () => {
+    const text = `states: q0,q1
+alphabet: a,b
+stackAlphabet: Z,A
+stackStart: Z
+start: q0
+accept: q1
+transitions:
+q0,a,Z -> q0,A|Z
+q0,b,A -> q0,eps
+q0,e,Z -> q1,Z`
+
+    const result = parsePushdownAutomaton(text)
+    expect(result.errors).toEqual([])
+    expect(result.value).not.toBeNull()
+    expect(result.value?.transitions).toHaveLength(3)
+  })
+
+  it('parses queue automaton definitions', () => {
+    const text = `states: q0,q1
+alphabet: a,b
+queueAlphabet: Z,a
+queueStart: Z
+start: q0
+accept: q1
+transitions:
+q0,a,e -> q0,a
+q0,b,a -> q0,e
+q0,e,Z -> q1,Z`
+
+    const result = parseQueueAutomaton(text)
+    expect(result.errors).toEqual([])
+    expect(result.value).not.toBeNull()
+  })
+
+  it('parses turing machine definitions', () => {
+    const text = `states: q0,qAccept
+alphabet: 0,1
+tapeAlphabet: 0,1,_
+blank: _
+start: q0
+accept: qAccept
+transitions:
+q0,0 -> q0,1,R
+q0,1 -> q0,0,R
+q0,_ -> qAccept,_,S`
+
+    const result = parseTuringMachine(text)
+    expect(result.errors).toEqual([])
+    expect(result.value).not.toBeNull()
+    expect(result.value?.transitions).toHaveLength(3)
   })
 })

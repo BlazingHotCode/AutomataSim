@@ -1,6 +1,9 @@
 import type {
   DeterministicSimulationResult,
   NondeterministicSimulationResult,
+  PushdownSimulationResult,
+  QueueSimulationResult,
+  TuringSimulationResult,
 } from './automaton'
 
 export type AutomatonType =
@@ -32,6 +35,30 @@ export interface NondeterministicUiState {
   isAutoPlaying: boolean
 }
 
+export interface PushdownUiState {
+  definitionText: string
+  inputString: string
+  simulationResult: PushdownSimulationResult | null
+  activeStepIndex: number
+  isAutoPlaying: boolean
+}
+
+export interface QueueUiState {
+  definitionText: string
+  inputString: string
+  simulationResult: QueueSimulationResult | null
+  activeStepIndex: number
+  isAutoPlaying: boolean
+}
+
+export interface TuringUiState {
+  definitionText: string
+  inputString: string
+  simulationResult: TuringSimulationResult | null
+  activeStepIndex: number
+  isAutoPlaying: boolean
+}
+
 export interface PlannedUiState {
   definitionText: string
 }
@@ -39,9 +66,9 @@ export interface PlannedUiState {
 export type UiStateByType = {
   deterministicFiniteAutomaton: DeterministicUiState
   nondeterministicFiniteAutomaton: NondeterministicUiState
-  pushdownAutomaton: PlannedUiState
-  queueAutomaton: PlannedUiState
-  turingMachine: PlannedUiState
+  pushdownAutomaton: PushdownUiState
+  queueAutomaton: QueueUiState
+  turingMachine: TuringUiState
 }
 
 export interface PersistedUiConfig {
@@ -49,4 +76,7 @@ export interface PersistedUiConfig {
   definitionsByType: Record<AutomatonType, string>
   deterministicInputString: string
   nondeterministicInputString: string
+  pushdownInputString: string
+  queueInputString: string
+  turingInputString: string
 }

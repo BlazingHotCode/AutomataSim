@@ -19,17 +19,17 @@ export const AUTOMATON_OPTIONS: AutomatonOption[] = [
   {
     id: 'pushdownAutomaton',
     label: 'Pushdown Automaton',
-    supported: false,
+    supported: true,
   },
   {
     id: 'queueAutomaton',
     label: 'Queue Automaton',
-    supported: false,
+    supported: true,
   },
   {
     id: 'turingMachine',
     label: 'Turing Machine',
-    supported: false,
+    supported: true,
   },
 ]
 
@@ -61,6 +61,43 @@ q1,1 -> q2
 q2,0 -> q2
 q2,1 -> q2`
 
+export const PUSHDOWN_SAMPLE = `states: q0,q1
+alphabet: a,b
+stackAlphabet: Z,A
+stackStart: Z
+start: q0
+accept: q1
+transitions:
+q0,a,Z -> q0,A|Z
+q0,a,A -> q0,A|A
+q0,b,A -> q0,eps
+q0,e,Z -> q1,Z`
+
+export const TURING_SAMPLE = `states: q0,q1,qAccept
+alphabet: 0,1
+tapeAlphabet: 0,1,_
+blank: _
+start: q0
+accept: qAccept
+transitions:
+q0,0 -> q1,1,R
+q0,1 -> q1,0,R
+q0,_ -> qAccept,_,S
+q1,0 -> q0,0,R
+q1,1 -> q0,1,R
+q1,_ -> qAccept,_,S`
+
+export const QUEUE_SAMPLE = `states: q0,q1
+alphabet: a,b
+queueAlphabet: Z,a
+queueStart: Z
+start: q0
+accept: q1
+transitions:
+q0,a,e -> q0,a
+q0,b,a -> q0,e
+q0,e,Z -> q1,Z`
+
 export const LOCAL_STORAGE_KEY = 'automatasim:ui-state:v1'
 export const JSON_EXPORT_VERSION = 1
 
@@ -81,13 +118,25 @@ export function getDefaultUiStateByType(): UiStateByType {
       isAutoPlaying: false,
     },
     pushdownAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText: PUSHDOWN_SAMPLE,
+      inputString: '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     queueAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText: QUEUE_SAMPLE,
+      inputString: '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     turingMachine: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText: TURING_SAMPLE,
+      inputString: '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
   }
 }
@@ -120,6 +169,9 @@ export function loadPersistedUiConfig(): PersistedUiConfig | null {
       definitionsByType?: Partial<Record<AutomatonType, unknown>>
       deterministicInputString?: unknown
       nondeterministicInputString?: unknown
+      pushdownInputString?: unknown
+      queueInputString?: unknown
+      turingInputString?: unknown
     }
     const maybeType = parsed.selectedAutomatonType
     const validType = AUTOMATON_OPTIONS.some(
@@ -165,6 +217,18 @@ export function loadPersistedUiConfig(): PersistedUiConfig | null {
       nondeterministicInputString:
         typeof parsed.nondeterministicInputString === 'string'
           ? parsed.nondeterministicInputString
+          : '',
+      pushdownInputString:
+        typeof parsed.pushdownInputString === 'string'
+          ? parsed.pushdownInputString
+          : '',
+      queueInputString:
+        typeof parsed.queueInputString === 'string'
+          ? parsed.queueInputString
+          : '',
+      turingInputString:
+        typeof parsed.turingInputString === 'string'
+          ? parsed.turingInputString
           : '',
     }
   } catch {

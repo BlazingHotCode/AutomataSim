@@ -58,24 +58,24 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - [x] 2A.1.3 Add renderer support for multiple active states.
   - [x] 2A.1.4 Add engine and parser tests.
   - [x] 2A.1.5 Wire simulation UI (Run + step playback + trace panel).
-- [ ] 2A.2 Implement Pushdown Automaton
+- [x] 2A.2 Implement Pushdown Automaton
   - [x] 2A.2.1 Add model for stack alphabet and push/pop transitions.
-  - [ ] 2A.2.2 Implement step simulation with stack snapshots.
-  - [ ] 2A.2.3 Add stack UI visualization.
-  - [ ] 2A.2.4 Add engine and parser tests.
-  - [ ] 2A.2.5 Wire simulation UI (Run + step playback + trace panel).
-- [ ] 2A.3 Implement Turing Machine
-  - [ ] 2A.3.1 Add tape/head model + parser mode.
-  - [ ] 2A.3.2 Implement execution engine with halt/step safeguards.
-  - [ ] 2A.3.3 Add tape/head visualization and controls.
-  - [ ] 2A.3.4 Add engine and parser tests.
-  - [ ] 2A.3.5 Wire simulation UI (Run + step playback + trace panel).
-- [ ] 2A.4 Implement Queue Automaton
-  - [ ] 2A.4.1 Add queue model + parser mode.
-  - [ ] 2A.4.2 Implement queue transition simulation with snapshots.
-  - [ ] 2A.4.3 Add queue visualization and playback controls.
-  - [ ] 2A.4.4 Add engine and parser tests.
-  - [ ] 2A.4.5 Wire simulation UI (Run + step playback + trace panel).
+  - [x] 2A.2.2 Implement step simulation with stack snapshots.
+  - [x] 2A.2.3 Add stack UI visualization.
+  - [x] 2A.2.4 Add engine and parser tests.
+  - [x] 2A.2.5 Wire simulation UI (Run + step playback + trace panel).
+- [x] 2A.3 Implement Turing Machine
+  - [x] 2A.3.1 Add tape/head model + parser mode.
+  - [x] 2A.3.2 Implement execution engine with halt/step safeguards.
+  - [x] 2A.3.3 Add tape/head visualization and controls.
+  - [x] 2A.3.4 Add engine and parser tests.
+  - [x] 2A.3.5 Wire simulation UI (Run + step playback + trace panel).
+- [x] 2A.4 Implement Queue Automaton
+  - [x] 2A.4.1 Add queue model + parser mode.
+  - [x] 2A.4.2 Implement queue transition simulation with snapshots.
+  - [x] 2A.4.3 Add queue visualization and playback controls.
+  - [x] 2A.4.4 Add engine and parser tests.
+  - [x] 2A.4.5 Wire simulation UI (Run + step playback + trace panel).
 
 ## 3. Data Model and Engine
 

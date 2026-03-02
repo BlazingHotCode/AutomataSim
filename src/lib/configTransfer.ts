@@ -1,4 +1,10 @@
-import { parseDeterministicFiniteAutomaton } from './parseAutomaton'
+import {
+  parseDeterministicFiniteAutomaton,
+  parseNondeterministicFiniteAutomaton,
+  parsePushdownAutomaton,
+  parseQueueAutomaton,
+  parseTuringMachine,
+} from './parseAutomaton'
 import {
   getDefaultUiStateByType,
   getDefinitionsByTypeFromUiState,
@@ -23,6 +29,9 @@ export function createExportPayload(
       uiStateByType.deterministicFiniteAutomaton.inputString,
     nondeterministicInputString:
       uiStateByType.nondeterministicFiniteAutomaton.inputString,
+    pushdownInputString: uiStateByType.pushdownAutomaton.inputString,
+    queueInputString: uiStateByType.queueAutomaton.inputString,
+    turingInputString: uiStateByType.turingMachine.inputString,
   }
 }
 
@@ -39,6 +48,9 @@ export function validateImportedPayload(
           definitionsByType?: Partial<Record<AutomatonType, unknown>>
           deterministicInputString?: unknown
           nondeterministicInputString?: unknown
+          pushdownInputString?: unknown
+          queueInputString?: unknown
+          turingInputString?: unknown
         })
       : null
 
@@ -97,6 +109,24 @@ export function validateImportedPayload(
   ) {
     errors.push('nondeterministicInputString must be a string when provided.')
   }
+  if (
+    value.pushdownInputString !== undefined &&
+    typeof value.pushdownInputString !== 'string'
+  ) {
+    errors.push('pushdownInputString must be a string when provided.')
+  }
+  if (
+    value.queueInputString !== undefined &&
+    typeof value.queueInputString !== 'string'
+  ) {
+    errors.push('queueInputString must be a string when provided.')
+  }
+  if (
+    value.turingInputString !== undefined &&
+    typeof value.turingInputString !== 'string'
+  ) {
+    errors.push('turingInputString must be a string when provided.')
+  }
 
   if (typeof definitionsObject.deterministicFiniteAutomaton === 'string') {
     const parseResult = parseDeterministicFiniteAutomaton(
@@ -109,6 +139,38 @@ export function validateImportedPayload(
         .forEach((error) => errors.push(`- ${error}`))
     }
   }
+  if (typeof definitionsObject.nondeterministicFiniteAutomaton === 'string') {
+    const parseResult = parseNondeterministicFiniteAutomaton(
+      definitionsObject.nondeterministicFiniteAutomaton,
+    )
+    if (!parseResult.value) {
+      errors.push('definitionsByType.nondeterministicFiniteAutomaton is invalid:')
+      parseResult.errors.slice(0, 5).forEach((error) => errors.push(`- ${error}`))
+    }
+  }
+  if (typeof definitionsObject.pushdownAutomaton === 'string') {
+    const parseResult = parsePushdownAutomaton(
+      definitionsObject.pushdownAutomaton,
+    )
+    if (!parseResult.value) {
+      errors.push('definitionsByType.pushdownAutomaton is invalid:')
+      parseResult.errors.slice(0, 5).forEach((error) => errors.push(`- ${error}`))
+    }
+  }
+  if (typeof definitionsObject.queueAutomaton === 'string') {
+    const parseResult = parseQueueAutomaton(definitionsObject.queueAutomaton)
+    if (!parseResult.value) {
+      errors.push('definitionsByType.queueAutomaton is invalid:')
+      parseResult.errors.slice(0, 5).forEach((error) => errors.push(`- ${error}`))
+    }
+  }
+  if (typeof definitionsObject.turingMachine === 'string') {
+    const parseResult = parseTuringMachine(definitionsObject.turingMachine)
+    if (!parseResult.value) {
+      errors.push('definitionsByType.turingMachine is invalid:')
+      parseResult.errors.slice(0, 5).forEach((error) => errors.push(`- ${error}`))
+    }
+  }
 
   return { isValid: errors.length === 0, errors }
 }
@@ -118,6 +180,9 @@ export function buildUiStateFromImportedPayload(payload: {
   definitionsByType: Partial<Record<AutomatonType, unknown>>
   deterministicInputString?: unknown
   nondeterministicInputString?: unknown
+  pushdownInputString?: unknown
+  queueInputString?: unknown
+  turingInputString?: unknown
 }): { selectedAutomatonType: AutomatonType; uiStateByType: UiStateByType } {
   const defaults = getDefaultUiStateByType()
   const definitions = payload.definitionsByType
@@ -156,18 +221,39 @@ export function buildUiStateFromImportedPayload(payload: {
           typeof definitions.pushdownAutomaton === 'string'
             ? definitions.pushdownAutomaton
             : defaults.pushdownAutomaton.definitionText,
+        inputString:
+          typeof payload.pushdownInputString === 'string'
+            ? payload.pushdownInputString
+            : '',
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
       },
       queueAutomaton: {
         definitionText:
           typeof definitions.queueAutomaton === 'string'
             ? definitions.queueAutomaton
             : defaults.queueAutomaton.definitionText,
+        inputString:
+          typeof payload.queueInputString === 'string'
+            ? payload.queueInputString
+            : '',
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
       },
       turingMachine: {
         definitionText:
           typeof definitions.turingMachine === 'string'
             ? definitions.turingMachine
             : defaults.turingMachine.definitionText,
+        inputString:
+          typeof payload.turingInputString === 'string'
+            ? payload.turingInputString
+            : '',
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
       },
     },
   }

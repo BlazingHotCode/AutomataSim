@@ -13,9 +13,15 @@ import {
 import {
   parseDeterministicFiniteAutomaton,
   parseNondeterministicFiniteAutomaton,
+  parsePushdownAutomaton,
+  parseQueueAutomaton,
+  parseTuringMachine,
 } from './lib/parseAutomaton'
 import { simulateDFA } from './lib/simulateDFA'
 import { simulateNFA } from './lib/simulateNFA'
+import { simulatePDA } from './lib/simulatePDA'
+import { simulateQueueAutomaton } from './lib/simulateQueue'
+import { simulateTuringMachine } from './lib/simulateTM'
 import {
   AUTOMATON_OPTIONS,
   getDefaultUiStateByType,
@@ -27,12 +33,21 @@ import type {
   AutomatonType,
   DeterministicUiState,
   NondeterministicUiState,
+  PushdownUiState,
+  QueueUiState,
+  TuringUiState,
   UiStateByType,
 } from './types/uiState'
 import type {
   DeterministicSimulationResult,
   NondeterministicFiniteAutomaton,
   NondeterministicSimulationResult,
+  PushdownAutomaton,
+  PushdownSimulationResult,
+  QueueAutomaton,
+  QueueSimulationResult,
+  TuringMachine,
+  TuringSimulationResult,
 } from './types/automaton'
 
 function flattenNondeterministicForGraph(
@@ -50,6 +65,48 @@ function flattenNondeterministicForGraph(
         to: target,
       })),
     ),
+  }
+}
+
+function flattenPushdownForGraph(machine: PushdownAutomaton) {
+  return {
+    states: machine.states,
+    alphabet: machine.alphabet,
+    startState: machine.startState,
+    acceptStates: machine.acceptStates,
+    transitions: machine.transitions.map((transition) => ({
+      from: transition.from,
+      symbol: `${transition.inputSymbol},${transition.popSymbol}->${transition.pushSymbols.join('|') || 'eps'}`,
+      to: transition.to,
+    })),
+  }
+}
+
+function flattenQueueForGraph(machine: QueueAutomaton) {
+  return {
+    states: machine.states,
+    alphabet: machine.alphabet,
+    startState: machine.startState,
+    acceptStates: machine.acceptStates,
+    transitions: machine.transitions.map((transition) => ({
+      from: transition.from,
+      symbol: `${transition.inputSymbol},${transition.dequeueSymbol}->${transition.enqueueSymbol}`,
+      to: transition.to,
+    })),
+  }
+}
+
+function flattenTuringForGraph(machine: TuringMachine) {
+  return {
+    states: machine.states,
+    alphabet: machine.alphabet,
+    startState: machine.startState,
+    acceptStates: machine.acceptStates,
+    transitions: machine.transitions.map((transition) => ({
+      from: transition.from,
+      symbol: `${transition.readSymbol}/${transition.writeSymbol},${transition.move}`,
+      to: transition.to,
+    })),
   }
 }
 
@@ -84,16 +141,28 @@ function App() {
       definitionText:
         persistedUiConfig?.definitionsByType.pushdownAutomaton ??
         getDefaultUiStateByType().pushdownAutomaton.definitionText,
+      inputString: persistedUiConfig?.pushdownInputString ?? '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     queueAutomaton: {
       definitionText:
         persistedUiConfig?.definitionsByType.queueAutomaton ??
         getDefaultUiStateByType().queueAutomaton.definitionText,
+      inputString: persistedUiConfig?.queueInputString ?? '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     turingMachine: {
       definitionText:
         persistedUiConfig?.definitionsByType.turingMachine ??
         getDefaultUiStateByType().turingMachine.definitionText,
+      inputString: persistedUiConfig?.turingInputString ?? '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
   })
   const [transferMessage, setTransferMessage] = useState<string | null>(null)
@@ -108,16 +177,23 @@ function App() {
   )!
   const selectedUiState = uiStateByType[selectedAutomatonType]
   const definitionText = selectedUiState.definitionText
-  const deterministicUiState =
-    uiStateByType.deterministicFiniteAutomaton
-  const nondeterministicUiState =
-    uiStateByType.nondeterministicFiniteAutomaton
+  const deterministicUiState = uiStateByType.deterministicFiniteAutomaton
+  const nondeterministicUiState = uiStateByType.nondeterministicFiniteAutomaton
+  const pushdownUiState = uiStateByType.pushdownAutomaton
+  const queueUiState = uiStateByType.queueAutomaton
+  const turingUiState = uiStateByType.turingMachine
   const activeSimulationUiState =
     selectedAutomatonType === 'deterministicFiniteAutomaton'
       ? deterministicUiState
       : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
         ? nondeterministicUiState
-        : null
+        : selectedAutomatonType === 'pushdownAutomaton'
+          ? pushdownUiState
+          : selectedAutomatonType === 'queueAutomaton'
+            ? queueUiState
+            : selectedAutomatonType === 'turingMachine'
+              ? turingUiState
+              : null
   const inputString = activeSimulationUiState?.inputString ?? ''
   const simulationResult = activeSimulationUiState?.simulationResult ?? null
   const activeStepIndex = activeSimulationUiState?.activeStepIndex ?? -1
@@ -147,6 +223,33 @@ function App() {
     }))
   }
 
+  function updatePushdownUiState(
+    updater: (currentValue: PushdownUiState) => PushdownUiState,
+  ) {
+    setUiStateByType((currentValue) => ({
+      ...currentValue,
+      pushdownAutomaton: updater(currentValue.pushdownAutomaton),
+    }))
+  }
+
+  function updateQueueUiState(
+    updater: (currentValue: QueueUiState) => QueueUiState,
+  ) {
+    setUiStateByType((currentValue) => ({
+      ...currentValue,
+      queueAutomaton: updater(currentValue.queueAutomaton),
+    }))
+  }
+
+  function updateTuringUiState(
+    updater: (currentValue: TuringUiState) => TuringUiState,
+  ) {
+    setUiStateByType((currentValue) => ({
+      ...currentValue,
+      turingMachine: updater(currentValue.turingMachine),
+    }))
+  }
+
   function showTransferMessage(kind: 'success' | 'error', message: string) {
     setTransferMessageKind(kind)
     setTransferMessage(message)
@@ -173,11 +276,35 @@ function App() {
     }
     return parseNondeterministicFiniteAutomaton(definitionText)
   }, [definitionText, selectedAutomatonType])
+  const pushdownParseResult = useMemo(() => {
+    if (selectedAutomatonType !== 'pushdownAutomaton') {
+      return null
+    }
+    return parsePushdownAutomaton(definitionText)
+  }, [definitionText, selectedAutomatonType])
+  const queueParseResult = useMemo(() => {
+    if (selectedAutomatonType !== 'queueAutomaton') {
+      return null
+    }
+    return parseQueueAutomaton(definitionText)
+  }, [definitionText, selectedAutomatonType])
+  const turingParseResult = useMemo(() => {
+    if (selectedAutomatonType !== 'turingMachine') {
+      return null
+    }
+    return parseTuringMachine(definitionText)
+  }, [definitionText, selectedAutomatonType])
   const activeParseErrors =
     selectedAutomatonType === 'deterministicFiniteAutomaton'
       ? (deterministicParseResult?.errors ?? [])
       : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
         ? (nondeterministicParseResult?.errors ?? [])
+        : selectedAutomatonType === 'pushdownAutomaton'
+          ? (pushdownParseResult?.errors ?? [])
+          : selectedAutomatonType === 'queueAutomaton'
+            ? (queueParseResult?.errors ?? [])
+            : selectedAutomatonType === 'turingMachine'
+              ? (turingParseResult?.errors ?? [])
         : []
   const graphMachine = (() => {
     if (
@@ -191,6 +318,15 @@ function App() {
       nondeterministicParseResult?.value
     ) {
       return flattenNondeterministicForGraph(nondeterministicParseResult.value)
+    }
+    if (selectedAutomatonType === 'pushdownAutomaton' && pushdownParseResult?.value) {
+      return flattenPushdownForGraph(pushdownParseResult.value)
+    }
+    if (selectedAutomatonType === 'queueAutomaton' && queueParseResult?.value) {
+      return flattenQueueForGraph(queueParseResult.value)
+    }
+    if (selectedAutomatonType === 'turingMachine' && turingParseResult?.value) {
+      return flattenTuringForGraph(turingParseResult.value)
     }
     return null
   })()
@@ -226,6 +362,9 @@ function App() {
             pushdownAutomaton: {
               ...currentValue.pushdownAutomaton,
               definitionText: nextDefinition,
+              simulationResult: null,
+              activeStepIndex: -1,
+              isAutoPlaying: false,
             },
           }
         case 'queueAutomaton':
@@ -234,6 +373,9 @@ function App() {
             queueAutomaton: {
               ...currentValue.queueAutomaton,
               definitionText: nextDefinition,
+              simulationResult: null,
+              activeStepIndex: -1,
+              isAutoPlaying: false,
             },
           }
         case 'turingMachine':
@@ -242,6 +384,9 @@ function App() {
             turingMachine: {
               ...currentValue.turingMachine,
               definitionText: nextDefinition,
+              simulationResult: null,
+              activeStepIndex: -1,
+              isAutoPlaying: false,
             },
           }
       }
@@ -271,6 +416,66 @@ function App() {
     }
 
     if (selectedAutomatonType !== 'nondeterministicFiniteAutomaton') {
+      if (selectedAutomatonType === 'pushdownAutomaton') {
+        if (!pushdownParseResult?.value) {
+          updatePushdownUiState((currentValue) => ({
+            ...currentValue,
+            simulationResult: null,
+            activeStepIndex: -1,
+            isAutoPlaying: false,
+          }))
+          return
+        }
+        const nextResult = simulatePDA(pushdownParseResult.value, inputString)
+        updatePushdownUiState((currentValue) => ({
+          ...currentValue,
+          simulationResult: nextResult,
+          activeStepIndex: nextResult.trace.length - 1,
+          isAutoPlaying: false,
+        }))
+        return
+      }
+      if (selectedAutomatonType === 'queueAutomaton') {
+        if (!queueParseResult?.value) {
+          updateQueueUiState((currentValue) => ({
+            ...currentValue,
+            simulationResult: null,
+            activeStepIndex: -1,
+            isAutoPlaying: false,
+          }))
+          return
+        }
+        const nextResult = simulateQueueAutomaton(
+          queueParseResult.value,
+          inputString,
+        )
+        updateQueueUiState((currentValue) => ({
+          ...currentValue,
+          simulationResult: nextResult,
+          activeStepIndex: nextResult.trace.length - 1,
+          isAutoPlaying: false,
+        }))
+        return
+      }
+      if (selectedAutomatonType === 'turingMachine') {
+        if (!turingParseResult?.value) {
+          updateTuringUiState((currentValue) => ({
+            ...currentValue,
+            simulationResult: null,
+            activeStepIndex: -1,
+            isAutoPlaying: false,
+          }))
+          return
+        }
+        const nextResult = simulateTuringMachine(turingParseResult.value, inputString)
+        updateTuringUiState((currentValue) => ({
+          ...currentValue,
+          simulationResult: nextResult,
+          activeStepIndex: nextResult.trace.length - 1,
+          isAutoPlaying: false,
+        }))
+        return
+      }
       return
     }
 
@@ -299,16 +504,34 @@ function App() {
     simulationResult !== null && activeStepIndex < totalTraceSteps - 1
   const canAutoPlay = simulationResult !== null && totalTraceSteps > 0
   const isDeterministicResult = (
-    value: DeterministicSimulationResult | NondeterministicSimulationResult,
+    value:
+      | DeterministicSimulationResult
+      | NondeterministicSimulationResult
+      | PushdownSimulationResult
+      | QueueSimulationResult
+      | TuringSimulationResult,
   ): value is DeterministicSimulationResult => 'finalState' in value
   const activeStates = (() => {
     if (!simulationResult) {
       return new Set<string>()
     }
-    if (isDeterministicResult(simulationResult)) {
+    if (
+      isDeterministicResult(simulationResult) &&
+      !('stackBefore' in (simulationResult.trace[0] ?? {})) &&
+      !('queueBefore' in (simulationResult.trace[0] ?? {})) &&
+      !('readSymbol' in (simulationResult.trace[0] ?? {}))
+    ) {
       const state =
         activeStepIndex >= 0
           ? simulationResult.trace[activeStepIndex].toState
+          : simulationResult.startState
+      return new Set([state])
+    }
+    if ('finalState' in simulationResult) {
+      const state =
+        activeStepIndex >= 0
+          ? simulationResult.trace[activeStepIndex]?.toState ??
+            simulationResult.finalState
           : simulationResult.startState
       return new Set([state])
     }
@@ -320,8 +543,42 @@ function App() {
   })()
   const activeStateLabel =
     activeStates.size === 0 ? null : Array.from(activeStates).join(', ')
+  function getStepFromState(
+    step:
+      | DeterministicSimulationResult['trace'][number]
+      | PushdownSimulationResult['trace'][number]
+      | QueueSimulationResult['trace'][number]
+      | TuringSimulationResult['trace'][number],
+  ) {
+    return step.fromState
+  }
+  function getStepToState(
+    step:
+      | DeterministicSimulationResult['trace'][number]
+      | PushdownSimulationResult['trace'][number]
+      | QueueSimulationResult['trace'][number]
+      | TuringSimulationResult['trace'][number],
+  ) {
+    return step.toState
+  }
+  function getStepSymbol(
+    step:
+      | DeterministicSimulationResult['trace'][number]
+      | PushdownSimulationResult['trace'][number]
+      | QueueSimulationResult['trace'][number]
+      | TuringSimulationResult['trace'][number],
+  ) {
+    if ('symbol' in step) return step.symbol
+    if ('popSymbol' in step) {
+      return `${step.inputSymbol},${step.popSymbol}->${step.pushSymbols.join('|') || 'eps'}`
+    }
+    if ('dequeueSymbol' in step) {
+      return `${step.inputSymbol},${step.dequeueSymbol}->${step.enqueueSymbol}`
+    }
+    return `${step.readSymbol}/${step.writeSymbol},${step.move}`
+  }
   const traversedTransitionKeys = (() => {
-    if (!simulationResult || !isDeterministicResult(simulationResult)) {
+    if (!simulationResult || !('finalState' in simulationResult)) {
       return new Set<string>()
     }
     const traversedSteps =
@@ -330,7 +587,8 @@ function App() {
         : simulationResult.trace.slice(0, activeStepIndex + 1)
     return new Set(
       traversedSteps.map(
-        (step) => `${step.fromState}|${step.symbol}|${step.toState}`,
+        (step) =>
+          `${getStepFromState(step)}|${getStepSymbol(step)}|${getStepToState(step)}`,
       ),
     )
   })()
@@ -338,14 +596,14 @@ function App() {
     if (!simulationResult) {
       return new Set<string>()
     }
-    if (isDeterministicResult(simulationResult)) {
+    if ('finalState' in simulationResult) {
       const traversedSteps =
         activeStepIndex < 0
           ? []
           : simulationResult.trace.slice(0, activeStepIndex + 1)
       return new Set([
         simulationResult.startState,
-        ...traversedSteps.map((step) => step.toState),
+        ...traversedSteps.map((step) => getStepToState(step)),
       ])
     }
     const traversedSteps =
@@ -360,13 +618,13 @@ function App() {
   const activeTransitionKey = (() => {
     if (
       !simulationResult ||
-      !isDeterministicResult(simulationResult) ||
+      !('finalState' in simulationResult) ||
       activeStepIndex < 0
     ) {
       return null
     }
     const step = simulationResult.trace[activeStepIndex]
-    return `${step.fromState}|${step.symbol}|${step.toState}`
+    return `${getStepFromState(step)}|${getStepSymbol(step)}|${getStepToState(step)}`
   })()
 
   useEffect(() => {
@@ -409,6 +667,48 @@ function App() {
               nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
           }
         })
+        return
+      }
+      if (selectedAutomatonType === 'pushdownAutomaton') {
+        updatePushdownUiState((currentValue) => {
+          const value = currentValue.activeStepIndex
+          const maxIndex = simulationResult.trace.length - 1
+          const nextValue = Math.min(value + 1, maxIndex)
+          return {
+            ...currentValue,
+            activeStepIndex: nextValue,
+            isAutoPlaying:
+              nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          }
+        })
+        return
+      }
+      if (selectedAutomatonType === 'queueAutomaton') {
+        updateQueueUiState((currentValue) => {
+          const value = currentValue.activeStepIndex
+          const maxIndex = simulationResult.trace.length - 1
+          const nextValue = Math.min(value + 1, maxIndex)
+          return {
+            ...currentValue,
+            activeStepIndex: nextValue,
+            isAutoPlaying:
+              nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          }
+        })
+        return
+      }
+      if (selectedAutomatonType === 'turingMachine') {
+        updateTuringUiState((currentValue) => {
+          const value = currentValue.activeStepIndex
+          const maxIndex = simulationResult.trace.length - 1
+          const nextValue = Math.min(value + 1, maxIndex)
+          return {
+            ...currentValue,
+            activeStepIndex: nextValue,
+            isAutoPlaying:
+              nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          }
+        })
       }
     }, 700)
 
@@ -427,6 +727,9 @@ function App() {
         uiStateByType.deterministicFiniteAutomaton.inputString,
       nondeterministicInputString:
         uiStateByType.nondeterministicFiniteAutomaton.inputString,
+      pushdownInputString: uiStateByType.pushdownAutomaton.inputString,
+      queueInputString: uiStateByType.queueAutomaton.inputString,
+      turingInputString: uiStateByType.turingMachine.inputString,
     }
 
     try {
@@ -480,6 +783,9 @@ function App() {
         definitionsByType: Partial<Record<AutomatonType, unknown>>
         deterministicInputString?: unknown
         nondeterministicInputString?: unknown
+        pushdownInputString?: unknown
+        queueInputString?: unknown
+        turingInputString?: unknown
       }
       const imported = buildUiStateFromImportedPayload(parsedConfig)
       setUiStateByType(imported.uiStateByType)
@@ -512,6 +818,27 @@ function App() {
           isAutoPlaying: true,
         }))
       }
+      if (selectedAutomatonType === 'pushdownAutomaton') {
+        updatePushdownUiState((currentValue) => ({
+          ...currentValue,
+          activeStepIndex: -1,
+          isAutoPlaying: true,
+        }))
+      }
+      if (selectedAutomatonType === 'queueAutomaton') {
+        updateQueueUiState((currentValue) => ({
+          ...currentValue,
+          activeStepIndex: -1,
+          isAutoPlaying: true,
+        }))
+      }
+      if (selectedAutomatonType === 'turingMachine') {
+        updateTuringUiState((currentValue) => ({
+          ...currentValue,
+          activeStepIndex: -1,
+          isAutoPlaying: true,
+        }))
+      }
       return
     }
     if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
@@ -522,6 +849,24 @@ function App() {
     }
     if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
       updateNondeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: true,
+      }))
+    }
+    if (selectedAutomatonType === 'pushdownAutomaton') {
+      updatePushdownUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: true,
+      }))
+    }
+    if (selectedAutomatonType === 'queueAutomaton') {
+      updateQueueUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: true,
+      }))
+    }
+    if (selectedAutomatonType === 'turingMachine') {
+      updateTuringUiState((currentValue) => ({
         ...currentValue,
         isAutoPlaying: true,
       }))
@@ -543,6 +888,27 @@ function App() {
         activeStepIndex: -1,
       }))
     }
+    if (selectedAutomatonType === 'pushdownAutomaton') {
+      updatePushdownUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+      }))
+    }
+    if (selectedAutomatonType === 'queueAutomaton') {
+      updateQueueUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+      }))
+    }
+    if (selectedAutomatonType === 'turingMachine') {
+      updateTuringUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+      }))
+    }
   }
 
   function handleClearSimulation() {
@@ -557,6 +923,33 @@ function App() {
     }
     if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
       updateNondeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+        simulationResult: null,
+        inputString: '',
+      }))
+    }
+    if (selectedAutomatonType === 'pushdownAutomaton') {
+      updatePushdownUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+        simulationResult: null,
+        inputString: '',
+      }))
+    }
+    if (selectedAutomatonType === 'queueAutomaton') {
+      updateQueueUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+        simulationResult: null,
+        inputString: '',
+      }))
+    }
+    if (selectedAutomatonType === 'turingMachine') {
+      updateTuringUiState((currentValue) => ({
         ...currentValue,
         isAutoPlaying: false,
         activeStepIndex: -1,
@@ -603,7 +996,13 @@ function App() {
               ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
               : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
                 ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB` (epsilon accepted as `e`, `eps`, `epsilon`, or `ε`).'
-                : `The ${selectedOption.label} parser format is not implemented yet.`}
+                : selectedAutomatonType === 'pushdownAutomaton'
+                  ? 'Format: add `stackAlphabet` and `stackStart`. Transition syntax: `source,input,pop -> target,pushA|pushB` (use `e`/`eps`/`epsilon`/`ε` for epsilon).'
+                  : selectedAutomatonType === 'queueAutomaton'
+                    ? 'Format: add `queueAlphabet` and `queueStart`. Transition syntax: `source,input,dequeue -> target,enqueue` (epsilon accepted as `e`/`eps`/`epsilon`/`ε`).'
+                    : selectedAutomatonType === 'turingMachine'
+                      ? 'Format: add `tapeAlphabet` and `blank`. Transition syntax: `source,read -> target,write,Move` where Move is L/R/S.'
+                      : `The ${selectedOption.label} parser format is not implemented yet.`}
           </p>
           <textarea
             className="definition-input"
@@ -622,8 +1021,7 @@ function App() {
             transferErrorDetails={transferErrorDetails}
           />
 
-          {(selectedAutomatonType === 'deterministicFiniteAutomaton' ||
-            selectedAutomatonType === 'nondeterministicFiniteAutomaton') && (
+          {selectedOption.supported && (
             <SimulationControls
               inputString={inputString}
               onInputChange={(value) => {
@@ -647,12 +1045,45 @@ function App() {
                     isAutoPlaying: false,
                   }))
                 }
+                if (selectedAutomatonType === 'pushdownAutomaton') {
+                  updatePushdownUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (selectedAutomatonType === 'queueAutomaton') {
+                  updateQueueUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (selectedAutomatonType === 'turingMachine') {
+                  updateTuringUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
+                }
               }}
               onRun={handleRunSimulation}
               canRun={Boolean(
                 selectedAutomatonType === 'deterministicFiniteAutomaton'
                   ? deterministicParseResult?.value
-                  : nondeterministicParseResult?.value,
+                  : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                    ? nondeterministicParseResult?.value
+                    : selectedAutomatonType === 'pushdownAutomaton'
+                      ? pushdownParseResult?.value
+                      : selectedAutomatonType === 'queueAutomaton'
+                        ? queueParseResult?.value
+                        : turingParseResult?.value,
               )}
               onResetProgress={handleResetSimulationProgress}
               onClear={handleClearSimulation}
@@ -735,6 +1166,24 @@ function App() {
                     activeStepIndex: currentValue.activeStepIndex - 1,
                   }))
                 }
+                if (selectedAutomatonType === 'pushdownAutomaton') {
+                  updatePushdownUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex - 1,
+                  }))
+                }
+                if (selectedAutomatonType === 'queueAutomaton') {
+                  updateQueueUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex - 1,
+                  }))
+                }
+                if (selectedAutomatonType === 'turingMachine') {
+                  updateTuringUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex - 1,
+                  }))
+                }
               }}
               onNext={() => {
                 if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
@@ -747,6 +1196,24 @@ function App() {
                   selectedAutomatonType === 'nondeterministicFiniteAutomaton'
                 ) {
                   updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex + 1,
+                  }))
+                }
+                if (selectedAutomatonType === 'pushdownAutomaton') {
+                  updatePushdownUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex + 1,
+                  }))
+                }
+                if (selectedAutomatonType === 'queueAutomaton') {
+                  updateQueueUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex + 1,
+                  }))
+                }
+                if (selectedAutomatonType === 'turingMachine') {
+                  updateTuringUiState((currentValue) => ({
                     ...currentValue,
                     activeStepIndex: currentValue.activeStepIndex + 1,
                   }))
@@ -764,6 +1231,24 @@ function App() {
                   selectedAutomatonType === 'nondeterministicFiniteAutomaton'
                 ) {
                   updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (selectedAutomatonType === 'pushdownAutomaton') {
+                  updatePushdownUiState((currentValue) => ({
+                    ...currentValue,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (selectedAutomatonType === 'queueAutomaton') {
+                  updateQueueUiState((currentValue) => ({
+                    ...currentValue,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (selectedAutomatonType === 'turingMachine') {
+                  updateTuringUiState((currentValue) => ({
                     ...currentValue,
                     isAutoPlaying: false,
                   }))
