@@ -9,16 +9,17 @@ const AppHero: FC<AppHeroProps> = ({ theme, onToggleTheme }) => {
   return (
     <section className="hero">
       <div className="hero-top-row">
-        <p className="eyebrow">AutomataSim</p>
+        <img
+          className="site-logo"
+          src="/site-logo.svg"
+          alt="AutomataSim"
+          width={108}
+          height={81}
+        />
         <button className="theme-toggle" type="button" onClick={onToggleTheme}>
           {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
         </button>
       </div>
-      <h1>Text-to-Automaton Renderer</h1>
-      <p className="subtitle">
-        Define a Deterministic Finite Automaton as text, and the diagram is
-        rendered automatically.
-      </p>
     </section>
   )
 }
