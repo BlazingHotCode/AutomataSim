@@ -559,22 +559,22 @@ function AutomatonGraph({
     if (bucket.length === 2) {
       const [first, second] = bucket
       const firstPositive = getCandidatePlacement(first, 1, true)
-      const secondNegative = getCandidatePlacement(second, -1, true)
-      const scoreOptionA = firstPositive.score + secondNegative.score
+      const secondPositive = getCandidatePlacement(second, 1, true)
+      const scoreOptionA = firstPositive.score + secondPositive.score
 
       const firstNegative = getCandidatePlacement(first, -1, true)
-      const secondPositive = getCandidatePlacement(second, 1, true)
-      const scoreOptionB = firstNegative.score + secondPositive.score
+      const secondNegative = getCandidatePlacement(second, -1, true)
+      const scoreOptionB = firstNegative.score + secondNegative.score
 
       const chosen =
         scoreOptionA >= scoreOptionB
           ? [
               { group: first, placement: firstPositive },
-              { group: second, placement: secondNegative },
+              { group: second, placement: secondPositive },
             ]
           : [
               { group: first, placement: firstNegative },
-              { group: second, placement: secondPositive },
+              { group: second, placement: secondNegative },
             ]
 
       chosen.forEach(({ group, placement }) => {
