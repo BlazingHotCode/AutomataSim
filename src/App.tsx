@@ -468,6 +468,18 @@ function App() {
                   Clear Simulation
                 </button>
               </div>
+
+              {!parseResult?.value && (
+                <div className="simulation-error-box" role="alert">
+                  <h3>Cannot Run Simulation</h3>
+                  <p>Fix the machine definition errors before running.</p>
+                  <ul>
+                    {parseResult?.errors.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>

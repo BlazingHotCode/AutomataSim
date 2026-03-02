@@ -111,7 +111,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - 5.4.3 auto-play
   - 5.4.4 pause/reset
 - [x] Add reset/clear actions.
-- [ ] Handle invalid machine configs with explicit error messages.
+- [x] Handle invalid machine configs with explicit error messages.
 
 ## 6. Persistence and Sharing (Optional but useful)
 
