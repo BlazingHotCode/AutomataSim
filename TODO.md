@@ -53,7 +53,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 ## 2A. Post-MVP Implementation Backlog (Not Done)
 
 - [ ] 2A.1 Implement Nondeterministic Finite Automaton
-  - [ ] 2A.1.1 Add types + parser mode.
+  - [x] 2A.1.1 Add types + parser mode.
   - [ ] 2A.1.2 Implement epsilon-closure simulation + trace.
   - [ ] 2A.1.3 Add renderer support for multiple active states.
   - [ ] 2A.1.4 Add engine and parser tests.

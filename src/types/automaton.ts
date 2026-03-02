@@ -7,12 +7,26 @@ export interface DeterministicTransition {
   to: StateId
 }
 
+export interface NondeterministicTransition {
+  from: StateId
+  symbol: SymbolToken
+  to: StateId[]
+}
+
 export interface DeterministicFiniteAutomaton {
   states: StateId[]
   alphabet: SymbolToken[]
   startState: StateId
   acceptStates: StateId[]
   transitions: DeterministicTransition[]
+}
+
+export interface NondeterministicFiniteAutomaton {
+  states: StateId[]
+  alphabet: SymbolToken[]
+  startState: StateId
+  acceptStates: StateId[]
+  transitions: NondeterministicTransition[]
 }
 
 export interface ParseResult<T> {

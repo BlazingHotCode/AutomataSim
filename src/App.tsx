@@ -10,7 +10,10 @@ import {
   createExportPayload,
   validateImportedPayload,
 } from './lib/configTransfer'
-import { parseDeterministicFiniteAutomaton } from './lib/parseAutomaton'
+import {
+  parseDeterministicFiniteAutomaton,
+  parseNondeterministicFiniteAutomaton,
+} from './lib/parseAutomaton'
 import { simulateDFA } from './lib/simulateDFA'
 import {
   AUTOMATON_OPTIONS,
@@ -24,6 +27,25 @@ import type {
   DeterministicUiState,
   UiStateByType,
 } from './types/uiState'
+import type { NondeterministicFiniteAutomaton } from './types/automaton'
+
+function flattenNondeterministicForGraph(
+  machine: NondeterministicFiniteAutomaton,
+) {
+  return {
+    states: machine.states,
+    alphabet: machine.alphabet,
+    startState: machine.startState,
+    acceptStates: machine.acceptStates,
+    transitions: machine.transitions.flatMap((transition) =>
+      transition.to.map((target) => ({
+        from: transition.from,
+        symbol: transition.symbol,
+        to: target,
+      })),
+    ),
+  }
+}
 
 function App() {
   const [persistedUiConfig] = useState(loadPersistedUiConfig)
@@ -110,12 +132,39 @@ function App() {
     setTransferErrorDetails(details)
   }
 
-  const parseResult = useMemo(() => {
+  const deterministicParseResult = useMemo(() => {
     if (selectedAutomatonType !== 'deterministicFiniteAutomaton') {
       return null
     }
     return parseDeterministicFiniteAutomaton(definitionText)
   }, [definitionText, selectedAutomatonType])
+  const nondeterministicParseResult = useMemo(() => {
+    if (selectedAutomatonType !== 'nondeterministicFiniteAutomaton') {
+      return null
+    }
+    return parseNondeterministicFiniteAutomaton(definitionText)
+  }, [definitionText, selectedAutomatonType])
+  const activeParseErrors =
+    selectedAutomatonType === 'deterministicFiniteAutomaton'
+      ? (deterministicParseResult?.errors ?? [])
+      : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+        ? (nondeterministicParseResult?.errors ?? [])
+        : []
+  const graphMachine = (() => {
+    if (
+      selectedAutomatonType === 'deterministicFiniteAutomaton' &&
+      deterministicParseResult?.value
+    ) {
+      return deterministicParseResult.value
+    }
+    if (
+      selectedAutomatonType === 'nondeterministicFiniteAutomaton' &&
+      nondeterministicParseResult?.value
+    ) {
+      return flattenNondeterministicForGraph(nondeterministicParseResult.value)
+    }
+    return null
+  })()
 
   function handleDefinitionChange(nextDefinition: string) {
     setUiStateByType((currentValue) => {
@@ -172,7 +221,7 @@ function App() {
       return
     }
 
-    if (!parseResult?.value) {
+    if (!deterministicParseResult?.value) {
       updateDeterministicUiState((currentValue) => ({
         ...currentValue,
         simulationResult: null,
@@ -182,7 +231,7 @@ function App() {
       return
     }
 
-    const nextResult = simulateDFA(parseResult.value, inputString)
+    const nextResult = simulateDFA(deterministicParseResult.value, inputString)
     updateDeterministicUiState((currentValue) => ({
       ...currentValue,
       simulationResult: nextResult,
@@ -394,9 +443,11 @@ function App() {
 
           <h2>Automaton Definition</h2>
           <p className="hint">
-            {selectedOption.supported
+            {selectedAutomatonType === 'deterministicFiniteAutomaton'
               ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
-              : `The ${selectedOption.label} parser format is not implemented yet.`}
+              : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB`'
+                : `The ${selectedOption.label} parser format is not implemented yet.`}
           </p>
           <textarea
             className="definition-input"
@@ -415,7 +466,7 @@ function App() {
             transferErrorDetails={transferErrorDetails}
           />
 
-          {selectedOption.supported && (
+          {selectedAutomatonType === 'deterministicFiniteAutomaton' && (
             <SimulationControls
               inputString={inputString}
               onInputChange={(value) => {
@@ -428,7 +479,7 @@ function App() {
                 }))
               }}
               onRun={handleRunSimulation}
-              canRun={Boolean(parseResult?.value)}
+              canRun={Boolean(deterministicParseResult?.value)}
               onResetProgress={handleResetSimulationProgress}
               onClear={handleClearSimulation}
               disableResetProgress={
@@ -441,16 +492,16 @@ function App() {
                 activeStepIndex < 0 &&
                 !isAutoPlaying
               }
-              parseErrors={parseResult?.errors ?? []}
+              parseErrors={deterministicParseResult?.errors ?? []}
             />
           )}
         </div>
 
         <div>
           <h2>Rendered Automaton</h2>
-          {selectedOption.supported && parseResult?.value ? (
+          {selectedOption.supported && graphMachine ? (
             <AutomatonGraph
-              machine={parseResult.value}
+              machine={graphMachine}
               currentState={activeState}
               traversedStates={traversedStates}
               traversedTransitionKeys={traversedTransitionKeys}
@@ -460,7 +511,7 @@ function App() {
             <div className="error-box">
               <h3>Definition Errors</h3>
               <ul>
-                {parseResult?.errors.map((error) => (
+                {activeParseErrors.map((error) => (
                   <li key={error}>{error}</li>
                 ))}
               </ul>

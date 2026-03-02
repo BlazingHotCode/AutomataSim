@@ -14,7 +14,7 @@ export const AUTOMATON_OPTIONS: AutomatonOption[] = [
   {
     id: 'nondeterministicFiniteAutomaton',
     label: 'Nondeterministic Finite Automaton',
-    supported: false,
+    supported: true,
   },
   {
     id: 'pushdownAutomaton',
@@ -48,6 +48,18 @@ q2,1 -> q2`
 export const FUTURE_TEMPLATE = `# Format for this automaton type will be added here.
 # This mode is planned but not implemented yet.`
 
+export const NONDETERMINISTIC_SAMPLE = `states: q0,q1,q2
+alphabet: 0,1
+start: q0
+accept: q2
+transitions:
+q0,0 -> q0|q1
+q0,1 -> q0
+q1,0 -> q2
+q1,1 -> q2
+q2,0 -> q2
+q2,1 -> q2`
+
 export const LOCAL_STORAGE_KEY = 'automatasim:ui-state:v1'
 export const JSON_EXPORT_VERSION = 1
 
@@ -61,7 +73,7 @@ export function getDefaultUiStateByType(): UiStateByType {
       isAutoPlaying: false,
     },
     nondeterministicFiniteAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText: NONDETERMINISTIC_SAMPLE,
     },
     pushdownAutomaton: {
       definitionText: FUTURE_TEMPLATE,

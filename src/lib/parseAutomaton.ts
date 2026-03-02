@@ -1,6 +1,8 @@
 import type {
   DeterministicFiniteAutomaton,
   DeterministicTransition,
+  NondeterministicFiniteAutomaton,
+  NondeterministicTransition,
   ParseResult,
 } from '../types/automaton'
 
@@ -11,9 +13,20 @@ function parseCsv(value: string): string[] {
     .filter((token) => token.length > 0)
 }
 
-export function parseDeterministicFiniteAutomaton(
-  text: string,
-): ParseResult<DeterministicFiniteAutomaton> {
+interface ParsedBaseSections {
+  states: string[]
+  alphabet: string[]
+  startState: string
+  acceptStates: string[]
+  transitionLines: string[]
+  stateSet: Set<string>
+  alphabetSet: Set<string>
+}
+
+function parseBaseSections(text: string): {
+  value: ParsedBaseSections | null
+  errors: string[]
+} {
   const errors: string[] = []
   const normalizedLines = text
     .split('\n')
@@ -70,14 +83,41 @@ export function parseDeterministicFiniteAutomaton(
   }
 
   const transitionLines = normalizedLines.slice(transitionsIndex + 1)
-  const transitions: DeterministicTransition[] = []
-  const transitionKeys = new Set<string>()
-
   if (transitionLines.length === 0) {
     errors.push('At least one transition is required.')
   }
 
-  for (const line of transitionLines) {
+  if (errors.length > 0) {
+    return { value: null, errors }
+  }
+
+  return {
+    value: {
+      states,
+      alphabet,
+      startState,
+      acceptStates,
+      transitionLines,
+      stateSet,
+      alphabetSet,
+    },
+    errors: [],
+  }
+}
+
+export function parseDeterministicFiniteAutomaton(
+  text: string,
+): ParseResult<DeterministicFiniteAutomaton> {
+  const base = parseBaseSections(text)
+  if (!base.value) {
+    return { value: null, errors: base.errors }
+  }
+
+  const errors: string[] = []
+  const transitions: DeterministicTransition[] = []
+  const transitionKeys = new Set<string>()
+
+  for (const line of base.value.transitionLines) {
     const match = line.match(/^([^,]+),([^-\s]+)\s*->\s*(.+)$/)
     if (!match) {
       errors.push(`Invalid transition format: "${line}".`)
@@ -88,13 +128,13 @@ export function parseDeterministicFiniteAutomaton(
     const symbol = match[2].trim()
     const to = match[3].trim()
 
-    if (!stateSet.has(from)) {
+    if (!base.value.stateSet.has(from)) {
       errors.push(`Transition source "${from}" is not in states.`)
     }
-    if (!stateSet.has(to)) {
+    if (!base.value.stateSet.has(to)) {
       errors.push(`Transition target "${to}" is not in states.`)
     }
-    if (!alphabetSet.has(symbol)) {
+    if (!base.value.alphabetSet.has(symbol)) {
       errors.push(`Transition symbol "${symbol}" is not in alphabet.`)
     }
 
@@ -114,10 +154,80 @@ export function parseDeterministicFiniteAutomaton(
 
   return {
     value: {
-      states,
-      alphabet,
-      startState,
-      acceptStates,
+      states: base.value.states,
+      alphabet: base.value.alphabet,
+      startState: base.value.startState,
+      acceptStates: base.value.acceptStates,
+      transitions,
+    },
+    errors: [],
+  }
+}
+
+export function parseNondeterministicFiniteAutomaton(
+  text: string,
+): ParseResult<NondeterministicFiniteAutomaton> {
+  const base = parseBaseSections(text)
+  const baseValue = base.value
+  if (!baseValue) {
+    return { value: null, errors: base.errors }
+  }
+
+  const errors: string[] = []
+  const transitions: NondeterministicTransition[] = []
+  const transitionKeys = new Set<string>()
+
+  for (const line of baseValue.transitionLines) {
+    const match = line.match(/^([^,]+),([^-\s]+)\s*->\s*(.+)$/)
+    if (!match) {
+      errors.push(`Invalid transition format: "${line}".`)
+      continue
+    }
+
+    const from = match[1].trim()
+    const symbol = match[2].trim()
+    const targetList = match[3].trim()
+    const to = targetList
+      .split('|')
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0)
+
+    if (!baseValue.stateSet.has(from)) {
+      errors.push(`Transition source "${from}" is not in states.`)
+    }
+    if (!baseValue.alphabetSet.has(symbol)) {
+      errors.push(`Transition symbol "${symbol}" is not in alphabet.`)
+    }
+    if (to.length === 0) {
+      errors.push(`Transition target list must not be empty for "${line}".`)
+    }
+
+    to.forEach((target) => {
+      if (!baseValue.stateSet.has(target)) {
+        errors.push(`Transition target "${target}" is not in states.`)
+      }
+      const key = `${from}|${symbol}|${target}`
+      if (transitionKeys.has(key)) {
+        errors.push(
+          `Duplicate transition for state "${from}", symbol "${symbol}", and target "${target}".`,
+        )
+      }
+      transitionKeys.add(key)
+    })
+
+    transitions.push({ from, symbol, to })
+  }
+
+  if (errors.length > 0) {
+    return { value: null, errors }
+  }
+
+  return {
+    value: {
+      states: baseValue.states,
+      alphabet: baseValue.alphabet,
+      startState: baseValue.startState,
+      acceptStates: baseValue.acceptStates,
       transitions,
     },
     errors: [],
