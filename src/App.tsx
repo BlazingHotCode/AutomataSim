@@ -83,7 +83,21 @@ function getStatePositions(states: string[]) {
   )
 }
 
-function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) {
+interface AutomatonGraphProps {
+  machine: DeterministicFiniteAutomaton
+  currentState?: string | null
+  traversedStates?: Set<string>
+  traversedTransitionKeys?: Set<string>
+  activeTransitionKey?: string | null
+}
+
+function AutomatonGraph({
+  machine,
+  currentState = null,
+  traversedStates = new Set<string>(),
+  traversedTransitionKeys = new Set<string>(),
+  activeTransitionKey = null,
+}: AutomatonGraphProps) {
   const positions = getStatePositions(machine.states)
   const nodeRadius = 28
 
@@ -106,6 +120,12 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
         const from = positions[transition.from]
         const to = positions[transition.to]
         const isSelfLoop = transition.from === transition.to
+        const transitionKey = `${transition.from}|${transition.symbol}|${transition.to}`
+        const isTraversed = traversedTransitionKeys.has(transitionKey)
+        const isActive = activeTransitionKey === transitionKey
+        const strokeColor = isActive ? '#d36b1f' : isTraversed ? '#2f7f4f' : '#2e4c76'
+        const textColor = isActive ? '#8d3f08' : isTraversed ? '#1d5b34' : '#10284a'
+        const strokeWidth = isActive ? 3 : 2
 
         if (isSelfLoop) {
           return (
@@ -116,11 +136,16 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
                       ${from.x + 40} ${from.y - 75},
                       ${from.x + 12} ${from.y - nodeRadius}`}
                 fill="none"
-                stroke="#2e4c76"
-                strokeWidth="2"
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
                 markerEnd="url(#arrow)"
               />
-              <text x={from.x} y={from.y - 78} textAnchor="middle">
+              <text
+                x={from.x}
+                y={from.y - 78}
+                textAnchor="middle"
+                fill={textColor}
+              >
                 {transition.symbol}
               </text>
             </g>
@@ -146,11 +171,11 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
               y1={startY}
               x2={endX}
               y2={endY}
-              stroke="#2e4c76"
-              strokeWidth="2"
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
               markerEnd="url(#arrow)"
             />
-            <text x={labelX} y={labelY} textAnchor="middle">
+            <text x={labelX} y={labelY} textAnchor="middle" fill={textColor}>
               {transition.symbol}
             </text>
           </g>
@@ -161,6 +186,8 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
         const position = positions[state]
         const isAccepting = machine.acceptStates.includes(state)
         const isStart = machine.startState === state
+        const isCurrent = currentState === state
+        const isTraversed = traversedStates.has(state)
 
         return (
           <g key={state}>
@@ -179,7 +206,13 @@ function AutomatonGraph({ machine }: { machine: DeterministicFiniteAutomaton }) 
               cx={position.x}
               cy={position.y}
               r={nodeRadius}
-              className="state-node"
+              className={[
+                'state-node',
+                isTraversed ? 'state-node-traversed' : '',
+                isCurrent ? 'state-node-current' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             {isAccepting && (
               <circle
@@ -214,6 +247,7 @@ function App() {
   const [inputString, setInputString] = useState('')
   const [simulationResult, setSimulationResult] =
     useState<DeterministicSimulationResult | null>(null)
+  const [activeStepIndex, setActiveStepIndex] = useState(-1)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
     (option) => option.id === selectedAutomatonType,
@@ -232,6 +266,7 @@ function App() {
       [selectedAutomatonType]: nextDefinition,
     }))
     setSimulationResult(null)
+    setActiveStepIndex(-1)
   }
 
   function handleRunSimulation() {
@@ -241,11 +276,42 @@ function App() {
 
     if (!parseResult?.value) {
       setSimulationResult(null)
+      setActiveStepIndex(-1)
       return
     }
 
-    setSimulationResult(simulateDFA(parseResult.value, inputString))
+    const nextResult = simulateDFA(parseResult.value, inputString)
+    setSimulationResult(nextResult)
+    setActiveStepIndex(nextResult.trace.length - 1)
   }
+
+  const totalTraceSteps = simulationResult?.trace.length ?? 0
+  const canStepBackward = simulationResult !== null && activeStepIndex >= 0
+  const canStepForward =
+    simulationResult !== null && activeStepIndex < totalTraceSteps - 1
+  const activeState =
+    simulationResult === null
+      ? null
+      : activeStepIndex >= 0
+        ? simulationResult.trace[activeStepIndex].toState
+        : simulationResult.startState
+  const traversedSteps =
+    simulationResult === null || activeStepIndex < 0
+      ? []
+      : simulationResult.trace.slice(0, activeStepIndex + 1)
+  const traversedTransitionKeys = new Set(
+    traversedSteps.map(
+      (step) => `${step.fromState}|${step.symbol}|${step.toState}`,
+    ),
+  )
+  const traversedStates = new Set([
+    ...(simulationResult ? [simulationResult.startState] : []),
+    ...traversedSteps.map((step) => step.toState),
+  ])
+  const activeTransitionKey =
+    simulationResult !== null && activeStepIndex >= 0
+      ? `${simulationResult.trace[activeStepIndex].fromState}|${simulationResult.trace[activeStepIndex].symbol}|${simulationResult.trace[activeStepIndex].toState}`
+      : null
 
   return (
     <main className="app-shell">
@@ -270,6 +336,7 @@ function App() {
             onChange={(event) => {
               setSelectedAutomatonType(event.target.value as AutomatonType)
               setSimulationResult(null)
+              setActiveStepIndex(-1)
             }}
           >
             {AUTOMATON_OPTIONS.map((option) => (
@@ -306,6 +373,7 @@ function App() {
                 onChange={(event) => {
                   setInputString(event.target.value)
                   setSimulationResult(null)
+                  setActiveStepIndex(-1)
                 }}
                 placeholder="Example: 10101 or a b a"
               />
@@ -324,7 +392,13 @@ function App() {
         <div>
           <h2>Rendered Automaton</h2>
           {selectedOption.supported && parseResult?.value ? (
-            <AutomatonGraph machine={parseResult.value} />
+            <AutomatonGraph
+              machine={parseResult.value}
+              currentState={activeState}
+              traversedStates={traversedStates}
+              traversedTransitionKeys={traversedTransitionKeys}
+              activeTransitionKey={activeTransitionKey}
+            />
           ) : selectedOption.supported ? (
             <div className="error-box">
               <h3>Definition Errors</h3>
@@ -342,6 +416,19 @@ function App() {
                 {' '}
                 support is planned in the roadmap.
               </p>
+            </div>
+          )}
+
+          {selectedOption.supported && simulationResult && (
+            <div className="graph-legend">
+              <span className="legend-item">
+                <span className="legend-swatch legend-current" />
+                Current state/step
+              </span>
+              <span className="legend-item">
+                <span className="legend-swatch legend-path" />
+                Path taken
+              </span>
             </div>
           )}
 
@@ -374,6 +461,71 @@ function App() {
                   ))}
                 </ul>
               )}
+
+              <div className="step-runner">
+                <h4>Step Runner</h4>
+                <p>
+                  Step:
+                  {' '}
+                  <strong>
+                    {Math.max(0, activeStepIndex + 1)}
+                    /
+                    {totalTraceSteps}
+                  </strong>
+                  {' '}
+                  | Current state:
+                  {' '}
+                  <strong>{activeState}</strong>
+                </p>
+                <div className="step-controls">
+                  <button
+                    className="step-button"
+                    type="button"
+                    onClick={() => setActiveStepIndex((value) => value - 1)}
+                    disabled={!canStepBackward}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="step-button"
+                    type="button"
+                    onClick={() => setActiveStepIndex((value) => value + 1)}
+                    disabled={!canStepForward}
+                  >
+                    Next
+                  </button>
+                  <button
+                    className="step-button"
+                    type="button"
+                    onClick={() => setActiveStepIndex(-1)}
+                    disabled={simulationResult.trace.length === 0}
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {simulationResult.trace.length > 0 ? (
+                  <ol className="trace-list">
+                    {simulationResult.trace.map((step, index) => (
+                      <li
+                        key={`${step.index}-${step.symbol}-${step.fromState}-${step.toState}`}
+                        className={index === activeStepIndex ? 'trace-active' : ''}
+                      >
+                        Read
+                        {' '}
+                        <strong>{step.symbol}</strong>
+                        :
+                        {' '}
+                        {step.fromState}
+                        {' -> '}
+                        {step.toState}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="trace-empty">No transition steps to display.</p>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -73,3 +73,34 @@
 
 - Added explicit Simulation UI task: `Allow simulating step by step.`
 - Next immediate implementation target: TODO Step 6 (interactive step runner).
+
+## 2026-03-02 (Entry 3)
+
+### Interactive Step Runner
+
+- Implemented interactive Deterministic Finite Automaton stepping in `src/App.tsx`.
+- Added step state tracking (`activeStepIndex`) and controls:
+  - `Previous`
+  - `Next`
+  - `Reset`
+- Added step progress display (`current step / total steps`) and current state output.
+- Added explicit step-by-step trace list with active-step highlighting.
+
+### Graph Rendering Improvements for Simulation Clarity
+
+- Enhanced `AutomatonGraph` to render simulation context directly on the diagram:
+  - current state highlight
+  - traversed states highlight
+  - traversed transitions highlight
+  - active transition highlight
+- Added a graph legend in the UI to explain colors for:
+  - current position
+  - path taken
+- Updated run behavior to start with the simulation path already visible at the final executed step.
+
+### TODO Updates
+
+- Marked completed:
+  - `Allow simulating step by step.`
+  - `Show step-by-step trace (current state after each symbol).`
+  - Immediate Next Action `Step 6`.
