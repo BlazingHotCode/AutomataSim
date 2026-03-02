@@ -101,8 +101,9 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 
 ## 5. Simulation UI
 
-- [ ] Add input string field and Run button.
-- [ ] Show result clearly: Accept / Reject.
+- [x] Add input string field and Run button.
+- [x] Show result clearly: Accept / Reject.
+- [ ] Allow simulating step by step.
 - [ ] Show step-by-step trace (current state after each symbol).
 - [ ] Add playback controls for simulation walkthrough:
   - 5.4.1 next step
@@ -141,5 +142,5 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [x] Step 2: Create `src/types/automaton.ts`.
 - [x] Step 3: Implement `simulateDFA` in `src/lib/simulateDFA.ts`.
 - [x] Step 4: Render a text-based input to define states/transitions/string.
-- [ ] Step 5: Connect form data to `simulateDFA` and show accept/reject result for the Deterministic Finite Automaton.
+- [x] Step 5: Connect form data to `simulateDFA` and show accept/reject result for the Deterministic Finite Automaton.
 - [ ] Step 6: Add interactive step runner so users can walk through transitions from input start to end.

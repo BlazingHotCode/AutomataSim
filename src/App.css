@@ -100,6 +100,38 @@
   box-sizing: border-box;
 }
 
+.simulation-controls {
+  margin-top: 1rem;
+}
+
+.string-input {
+  width: 100%;
+  border: 1px solid #bccde5;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  color: #10284a;
+  background: #f8fbff;
+  box-sizing: border-box;
+}
+
+.run-button {
+  margin-top: 0.65rem;
+  border: 1px solid #163a6a;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-weight: 600;
+  color: #ffffff;
+  background: #1e4f8d;
+  cursor: pointer;
+}
+
+.run-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .automaton-canvas {
   width: 100%;
   min-height: 320px;
@@ -159,6 +191,38 @@
 .info-box p {
   margin: 0;
   color: #24426d;
+}
+
+.simulation-result {
+  margin-top: 0.9rem;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.simulation-result h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+}
+
+.simulation-result p {
+  margin: 0;
+}
+
+.simulation-result ul {
+  margin-top: 0.6rem;
+  color: #7d1010;
+}
+
+.simulation-result-accept {
+  border: 1px solid #bedec8;
+  background: #f1fcf4;
+  color: #204c2a;
+}
+
+.simulation-result-reject {
+  border: 1px solid #efc6c6;
+  background: #fff5f5;
+  color: #7d1010;
 }
 
 @media (min-width: 960px) {

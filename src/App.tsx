@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import { parseDeterministicFiniteAutomaton } from './lib/parseAutomaton'
-import type { DeterministicFiniteAutomaton } from './types/automaton'
+import { simulateDFA } from './lib/simulateDFA'
+import type {
+  DeterministicFiniteAutomaton,
+  DeterministicSimulationResult,
+} from './types/automaton'
 
 type AutomatonType =
   | 'deterministicFiniteAutomaton'
@@ -207,6 +211,9 @@ function App() {
     queueAutomaton: FUTURE_TEMPLATE,
     turingMachine: FUTURE_TEMPLATE,
   })
+  const [inputString, setInputString] = useState('')
+  const [simulationResult, setSimulationResult] =
+    useState<DeterministicSimulationResult | null>(null)
 
   const selectedOption = AUTOMATON_OPTIONS.find(
     (option) => option.id === selectedAutomatonType,
@@ -224,6 +231,20 @@ function App() {
       ...currentValue,
       [selectedAutomatonType]: nextDefinition,
     }))
+    setSimulationResult(null)
+  }
+
+  function handleRunSimulation() {
+    if (selectedAutomatonType !== 'deterministicFiniteAutomaton') {
+      return
+    }
+
+    if (!parseResult?.value) {
+      setSimulationResult(null)
+      return
+    }
+
+    setSimulationResult(simulateDFA(parseResult.value, inputString))
   }
 
   return (
@@ -246,9 +267,10 @@ function App() {
             id="automatonType"
             className="type-selector"
             value={selectedAutomatonType}
-            onChange={(event) =>
+            onChange={(event) => {
               setSelectedAutomatonType(event.target.value as AutomatonType)
-            }
+              setSimulationResult(null)
+            }}
           >
             {AUTOMATON_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
@@ -269,6 +291,34 @@ function App() {
             onChange={(event) => handleDefinitionChange(event.target.value)}
             spellCheck={false}
           />
+
+          {selectedOption.supported && (
+            <div className="simulation-controls">
+              <h2>Simulation</h2>
+              <label className="selector-label" htmlFor="inputString">
+                Input String
+              </label>
+              <input
+                id="inputString"
+                className="string-input"
+                type="text"
+                value={inputString}
+                onChange={(event) => {
+                  setInputString(event.target.value)
+                  setSimulationResult(null)
+                }}
+                placeholder="Example: 10101 or a b a"
+              />
+              <button
+                className="run-button"
+                type="button"
+                onClick={handleRunSimulation}
+                disabled={!parseResult?.value}
+              >
+                Run
+              </button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -292,6 +342,38 @@ function App() {
                 {' '}
                 support is planned in the roadmap.
               </p>
+            </div>
+          )}
+
+          {selectedOption.supported && simulationResult && (
+            <div
+              className={
+                simulationResult.accepted &&
+                simulationResult.errors.length === 0
+                  ? 'simulation-result simulation-result-accept'
+                  : 'simulation-result simulation-result-reject'
+              }
+            >
+              <h3>
+                Result:
+                {' '}
+                {simulationResult.accepted &&
+                simulationResult.errors.length === 0
+                  ? 'Accept'
+                  : 'Reject'}
+              </h3>
+              <p>
+                Final state:
+                {' '}
+                <strong>{simulationResult.finalState}</strong>
+              </p>
+              {simulationResult.errors.length > 0 && (
+                <ul>
+                  {simulationResult.errors.map((error) => (
+                    <li key={error}>{error}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>
