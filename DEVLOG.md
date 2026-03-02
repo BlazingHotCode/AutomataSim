@@ -73,8 +73,3 @@
 
 - Added explicit Simulation UI task: `Allow simulating step by step.`
 - Next immediate implementation target: TODO Step 6 (interactive step runner).
-
-### Validation Runs
-
-- `pnpm lint` passed
-- `pnpm test` passed
