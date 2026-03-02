@@ -132,6 +132,29 @@
   cursor: not-allowed;
 }
 
+.simulation-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  border: 1px solid #55779f;
+  border-radius: 8px;
+  padding: 0.42rem 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  color: #1a406d;
+  background: #f3f8ff;
+  cursor: pointer;
+}
+
+.action-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .automaton-canvas {
   width: 100%;
   min-height: 320px;

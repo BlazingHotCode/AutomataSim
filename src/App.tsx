@@ -356,6 +356,18 @@ function App() {
     setIsAutoPlaying(true)
   }
 
+  function handleResetSimulationProgress() {
+    setIsAutoPlaying(false)
+    setActiveStepIndex(-1)
+  }
+
+  function handleClearSimulation() {
+    setIsAutoPlaying(false)
+    setActiveStepIndex(-1)
+    setSimulationResult(null)
+    setInputString('')
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -430,6 +442,32 @@ function App() {
               >
                 Run
               </button>
+              <div className="simulation-actions">
+                <button
+                  className="action-button"
+                  type="button"
+                  onClick={handleResetSimulationProgress}
+                  disabled={
+                    simulationResult === null ||
+                    (activeStepIndex < 0 && !isAutoPlaying)
+                  }
+                >
+                  Reset Progress
+                </button>
+                <button
+                  className="action-button"
+                  type="button"
+                  onClick={handleClearSimulation}
+                  disabled={
+                    inputString.length === 0 &&
+                    simulationResult === null &&
+                    activeStepIndex < 0 &&
+                    !isAutoPlaying
+                  }
+                >
+                  Clear Simulation
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -558,10 +596,7 @@ function App() {
                   <button
                     className="step-button"
                     type="button"
-                    onClick={() => {
-                      setIsAutoPlaying(false)
-                      setActiveStepIndex(-1)
-                    }}
+                    onClick={handleResetSimulationProgress}
                     disabled={simulationResult.trace.length === 0 && activeStepIndex < 0}
                   >
                     Reset
