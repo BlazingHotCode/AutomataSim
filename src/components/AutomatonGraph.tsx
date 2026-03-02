@@ -3,6 +3,7 @@ import type { DeterministicFiniteAutomaton } from '../types/automaton'
 interface AutomatonGraphProps {
   machine: DeterministicFiniteAutomaton
   currentState?: string | null
+  currentStates?: Set<string>
   traversedStates?: Set<string>
   traversedTransitionKeys?: Set<string>
   activeTransitionKey?: string | null
@@ -88,6 +89,7 @@ function getConnectionAwareStatePositions(
 function AutomatonGraph({
   machine,
   currentState = null,
+  currentStates = new Set<string>(),
   traversedStates = new Set<string>(),
   traversedTransitionKeys = new Set<string>(),
   activeTransitionKey = null,
@@ -680,7 +682,10 @@ function AutomatonGraph({
         const position = positions[state]
         const isAccepting = machine.acceptStates.includes(state)
         const isStart = machine.startState === state
-        const isCurrent = currentState === state
+        const isCurrent =
+          currentStates.size > 0
+            ? currentStates.has(state)
+            : currentState === state
         const isTraversed = traversedStates.has(state)
 
         return (

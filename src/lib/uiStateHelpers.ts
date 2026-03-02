@@ -75,6 +75,10 @@ export function getDefaultUiStateByType(): UiStateByType {
     },
     nondeterministicFiniteAutomaton: {
       definitionText: NONDETERMINISTIC_SAMPLE,
+      inputString: '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     pushdownAutomaton: {
       definitionText: FUTURE_TEMPLATE,
@@ -115,6 +119,7 @@ export function loadPersistedUiConfig(): PersistedUiConfig | null {
       selectedAutomatonType?: unknown
       definitionsByType?: Partial<Record<AutomatonType, unknown>>
       deterministicInputString?: unknown
+      nondeterministicInputString?: unknown
     }
     const maybeType = parsed.selectedAutomatonType
     const validType = AUTOMATON_OPTIONS.some(
@@ -156,6 +161,10 @@ export function loadPersistedUiConfig(): PersistedUiConfig | null {
       deterministicInputString:
         typeof parsed.deterministicInputString === 'string'
           ? parsed.deterministicInputString
+          : '',
+      nondeterministicInputString:
+        typeof parsed.nondeterministicInputString === 'string'
+          ? parsed.nondeterministicInputString
           : '',
     }
   } catch {

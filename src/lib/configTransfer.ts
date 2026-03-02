@@ -21,6 +21,8 @@ export function createExportPayload(
     definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
     deterministicInputString:
       uiStateByType.deterministicFiniteAutomaton.inputString,
+    nondeterministicInputString:
+      uiStateByType.nondeterministicFiniteAutomaton.inputString,
   }
 }
 
@@ -36,6 +38,7 @@ export function validateImportedPayload(
           selectedAutomatonType?: unknown
           definitionsByType?: Partial<Record<AutomatonType, unknown>>
           deterministicInputString?: unknown
+          nondeterministicInputString?: unknown
         })
       : null
 
@@ -88,6 +91,12 @@ export function validateImportedPayload(
   ) {
     errors.push('deterministicInputString must be a string when provided.')
   }
+  if (
+    value.nondeterministicInputString !== undefined &&
+    typeof value.nondeterministicInputString !== 'string'
+  ) {
+    errors.push('nondeterministicInputString must be a string when provided.')
+  }
 
   if (typeof definitionsObject.deterministicFiniteAutomaton === 'string') {
     const parseResult = parseDeterministicFiniteAutomaton(
@@ -108,6 +117,7 @@ export function buildUiStateFromImportedPayload(payload: {
   selectedAutomatonType: AutomatonType
   definitionsByType: Partial<Record<AutomatonType, unknown>>
   deterministicInputString?: unknown
+  nondeterministicInputString?: unknown
 }): { selectedAutomatonType: AutomatonType; uiStateByType: UiStateByType } {
   const defaults = getDefaultUiStateByType()
   const definitions = payload.definitionsByType
@@ -133,6 +143,13 @@ export function buildUiStateFromImportedPayload(payload: {
           typeof definitions.nondeterministicFiniteAutomaton === 'string'
             ? definitions.nondeterministicFiniteAutomaton
             : defaults.nondeterministicFiniteAutomaton.definitionText,
+        inputString:
+          typeof payload.nondeterministicInputString === 'string'
+            ? payload.nondeterministicInputString
+            : '',
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
       },
       pushdownAutomaton: {
         definitionText:

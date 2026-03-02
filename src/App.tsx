@@ -15,6 +15,7 @@ import {
   parseNondeterministicFiniteAutomaton,
 } from './lib/parseAutomaton'
 import { simulateDFA } from './lib/simulateDFA'
+import { simulateNFA } from './lib/simulateNFA'
 import {
   AUTOMATON_OPTIONS,
   getDefaultUiStateByType,
@@ -25,9 +26,14 @@ import {
 import type {
   AutomatonType,
   DeterministicUiState,
+  NondeterministicUiState,
   UiStateByType,
 } from './types/uiState'
-import type { NondeterministicFiniteAutomaton } from './types/automaton'
+import type {
+  DeterministicSimulationResult,
+  NondeterministicFiniteAutomaton,
+  NondeterministicSimulationResult,
+} from './types/automaton'
 
 function flattenNondeterministicForGraph(
   machine: NondeterministicFiniteAutomaton,
@@ -69,6 +75,10 @@ function App() {
         persistedUiConfig?.definitionsByType.nondeterministicFiniteAutomaton ??
         getDefaultUiStateByType().nondeterministicFiniteAutomaton
           .definitionText,
+      inputString: persistedUiConfig?.nondeterministicInputString ?? '',
+      simulationResult: null,
+      activeStepIndex: -1,
+      isAutoPlaying: false,
     },
     pushdownAutomaton: {
       definitionText:
@@ -99,13 +109,19 @@ function App() {
   const selectedUiState = uiStateByType[selectedAutomatonType]
   const definitionText = selectedUiState.definitionText
   const deterministicUiState =
+    uiStateByType.deterministicFiniteAutomaton
+  const nondeterministicUiState =
+    uiStateByType.nondeterministicFiniteAutomaton
+  const activeSimulationUiState =
     selectedAutomatonType === 'deterministicFiniteAutomaton'
-      ? uiStateByType.deterministicFiniteAutomaton
-      : null
-  const inputString = deterministicUiState?.inputString ?? ''
-  const simulationResult = deterministicUiState?.simulationResult ?? null
-  const activeStepIndex = deterministicUiState?.activeStepIndex ?? -1
-  const isAutoPlaying = deterministicUiState?.isAutoPlaying ?? false
+      ? deterministicUiState
+      : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+        ? nondeterministicUiState
+        : null
+  const inputString = activeSimulationUiState?.inputString ?? ''
+  const simulationResult = activeSimulationUiState?.simulationResult ?? null
+  const activeStepIndex = activeSimulationUiState?.activeStepIndex ?? -1
+  const isAutoPlaying = activeSimulationUiState?.isAutoPlaying ?? false
 
   function updateDeterministicUiState(
     updater: (currentValue: DeterministicUiState) => DeterministicUiState,
@@ -114,6 +130,19 @@ function App() {
       ...currentValue,
       deterministicFiniteAutomaton: updater(
         currentValue.deterministicFiniteAutomaton,
+      ),
+    }))
+  }
+
+  function updateNondeterministicUiState(
+    updater: (
+      currentValue: NondeterministicUiState,
+    ) => NondeterministicUiState,
+  ) {
+    setUiStateByType((currentValue) => ({
+      ...currentValue,
+      nondeterministicFiniteAutomaton: updater(
+        currentValue.nondeterministicFiniteAutomaton,
       ),
     }))
   }
@@ -186,6 +215,9 @@ function App() {
             nondeterministicFiniteAutomaton: {
               ...currentValue.nondeterministicFiniteAutomaton,
               definitionText: nextDefinition,
+              simulationResult: null,
+              activeStepIndex: -1,
+              isAutoPlaying: false,
             },
           }
         case 'pushdownAutomaton':
@@ -217,12 +249,33 @@ function App() {
   }
 
   function handleRunSimulation() {
-    if (selectedAutomatonType !== 'deterministicFiniteAutomaton') {
+    if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+      if (!deterministicParseResult?.value) {
+        updateDeterministicUiState((currentValue) => ({
+          ...currentValue,
+          simulationResult: null,
+          activeStepIndex: -1,
+          isAutoPlaying: false,
+        }))
+        return
+      }
+
+      const nextResult = simulateDFA(deterministicParseResult.value, inputString)
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        simulationResult: nextResult,
+        activeStepIndex: nextResult.trace.length - 1,
+        isAutoPlaying: false,
+      }))
       return
     }
 
-    if (!deterministicParseResult?.value) {
-      updateDeterministicUiState((currentValue) => ({
+    if (selectedAutomatonType !== 'nondeterministicFiniteAutomaton') {
+      return
+    }
+
+    if (!nondeterministicParseResult?.value) {
+      updateNondeterministicUiState((currentValue) => ({
         ...currentValue,
         simulationResult: null,
         activeStepIndex: -1,
@@ -231,8 +284,8 @@ function App() {
       return
     }
 
-    const nextResult = simulateDFA(deterministicParseResult.value, inputString)
-    updateDeterministicUiState((currentValue) => ({
+    const nextResult = simulateNFA(nondeterministicParseResult.value, inputString)
+    updateNondeterministicUiState((currentValue) => ({
       ...currentValue,
       simulationResult: nextResult,
       activeStepIndex: nextResult.trace.length - 1,
@@ -245,29 +298,76 @@ function App() {
   const canStepForward =
     simulationResult !== null && activeStepIndex < totalTraceSteps - 1
   const canAutoPlay = simulationResult !== null && totalTraceSteps > 0
-  const activeState =
-    simulationResult === null
-      ? null
-      : activeStepIndex >= 0
-        ? simulationResult.trace[activeStepIndex].toState
-        : simulationResult.startState
-  const traversedSteps =
-    simulationResult === null || activeStepIndex < 0
-      ? []
-      : simulationResult.trace.slice(0, activeStepIndex + 1)
-  const traversedTransitionKeys = new Set(
-    traversedSteps.map(
-      (step) => `${step.fromState}|${step.symbol}|${step.toState}`,
-    ),
-  )
-  const traversedStates = new Set([
-    ...(simulationResult ? [simulationResult.startState] : []),
-    ...traversedSteps.map((step) => step.toState),
-  ])
-  const activeTransitionKey =
-    simulationResult !== null && activeStepIndex >= 0
-      ? `${simulationResult.trace[activeStepIndex].fromState}|${simulationResult.trace[activeStepIndex].symbol}|${simulationResult.trace[activeStepIndex].toState}`
-      : null
+  const isDeterministicResult = (
+    value: DeterministicSimulationResult | NondeterministicSimulationResult,
+  ): value is DeterministicSimulationResult => 'finalState' in value
+  const activeStates = (() => {
+    if (!simulationResult) {
+      return new Set<string>()
+    }
+    if (isDeterministicResult(simulationResult)) {
+      const state =
+        activeStepIndex >= 0
+          ? simulationResult.trace[activeStepIndex].toState
+          : simulationResult.startState
+      return new Set([state])
+    }
+    const states =
+      activeStepIndex >= 0
+        ? simulationResult.trace[activeStepIndex].toStates
+        : simulationResult.startStates
+    return new Set(states)
+  })()
+  const activeStateLabel =
+    activeStates.size === 0 ? null : Array.from(activeStates).join(', ')
+  const traversedTransitionKeys = (() => {
+    if (!simulationResult || !isDeterministicResult(simulationResult)) {
+      return new Set<string>()
+    }
+    const traversedSteps =
+      activeStepIndex < 0
+        ? []
+        : simulationResult.trace.slice(0, activeStepIndex + 1)
+    return new Set(
+      traversedSteps.map(
+        (step) => `${step.fromState}|${step.symbol}|${step.toState}`,
+      ),
+    )
+  })()
+  const traversedStates = (() => {
+    if (!simulationResult) {
+      return new Set<string>()
+    }
+    if (isDeterministicResult(simulationResult)) {
+      const traversedSteps =
+        activeStepIndex < 0
+          ? []
+          : simulationResult.trace.slice(0, activeStepIndex + 1)
+      return new Set([
+        simulationResult.startState,
+        ...traversedSteps.map((step) => step.toState),
+      ])
+    }
+    const traversedSteps =
+      activeStepIndex < 0
+        ? []
+        : simulationResult.trace.slice(0, activeStepIndex + 1)
+    return new Set([
+      ...simulationResult.startStates,
+      ...traversedSteps.flatMap((step) => step.toStates),
+    ])
+  })()
+  const activeTransitionKey = (() => {
+    if (
+      !simulationResult ||
+      !isDeterministicResult(simulationResult) ||
+      activeStepIndex < 0
+    ) {
+      return null
+    }
+    const step = simulationResult.trace[activeStepIndex]
+    return `${step.fromState}|${step.symbol}|${step.toState}`
+  })()
 
   useEffect(() => {
     if (!isAutoPlaying) {
@@ -283,21 +383,37 @@ function App() {
     }
 
     const timer = window.setTimeout(() => {
-      updateDeterministicUiState((currentValue) => {
-        const value = currentValue.activeStepIndex
-        const maxIndex = simulationResult.trace.length - 1
-        const nextValue = Math.min(value + 1, maxIndex)
-        return {
-          ...currentValue,
-          activeStepIndex: nextValue,
-          isAutoPlaying:
-            nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
-        }
-      })
+      if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+        updateDeterministicUiState((currentValue) => {
+          const value = currentValue.activeStepIndex
+          const maxIndex = simulationResult.trace.length - 1
+          const nextValue = Math.min(value + 1, maxIndex)
+          return {
+            ...currentValue,
+            activeStepIndex: nextValue,
+            isAutoPlaying:
+              nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          }
+        })
+        return
+      }
+      if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+        updateNondeterministicUiState((currentValue) => {
+          const value = currentValue.activeStepIndex
+          const maxIndex = simulationResult.trace.length - 1
+          const nextValue = Math.min(value + 1, maxIndex)
+          return {
+            ...currentValue,
+            activeStepIndex: nextValue,
+            isAutoPlaying:
+              nextValue >= maxIndex ? false : currentValue.isAutoPlaying,
+          }
+        })
+      }
     }, 700)
 
     return () => window.clearTimeout(timer)
-  }, [activeStepIndex, isAutoPlaying, simulationResult])
+  }, [activeStepIndex, isAutoPlaying, selectedAutomatonType, simulationResult])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -309,6 +425,8 @@ function App() {
       definitionsByType: getDefinitionsByTypeFromUiState(uiStateByType),
       deterministicInputString:
         uiStateByType.deterministicFiniteAutomaton.inputString,
+      nondeterministicInputString:
+        uiStateByType.nondeterministicFiniteAutomaton.inputString,
     }
 
     try {
@@ -361,6 +479,7 @@ function App() {
         selectedAutomatonType: AutomatonType
         definitionsByType: Partial<Record<AutomatonType, unknown>>
         deterministicInputString?: unknown
+        nondeterministicInputString?: unknown
       }
       const imported = buildUiStateFromImportedPayload(parsedConfig)
       setUiStateByType(imported.uiStateByType)
@@ -379,35 +498,72 @@ function App() {
     }
 
     if (activeStepIndex >= totalTraceSteps - 1) {
-      updateDeterministicUiState((currentValue) => ({
-        ...currentValue,
-        activeStepIndex: -1,
-        isAutoPlaying: true,
-      }))
+      if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+        updateDeterministicUiState((currentValue) => ({
+          ...currentValue,
+          activeStepIndex: -1,
+          isAutoPlaying: true,
+        }))
+      }
+      if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+        updateNondeterministicUiState((currentValue) => ({
+          ...currentValue,
+          activeStepIndex: -1,
+          isAutoPlaying: true,
+        }))
+      }
       return
     }
-    updateDeterministicUiState((currentValue) => ({
-      ...currentValue,
-      isAutoPlaying: true,
-    }))
+    if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: true,
+      }))
+    }
+    if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+      updateNondeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: true,
+      }))
+    }
   }
 
   function handleResetSimulationProgress() {
-    updateDeterministicUiState((currentValue) => ({
-      ...currentValue,
-      isAutoPlaying: false,
-      activeStepIndex: -1,
-    }))
+    if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+      }))
+    }
+    if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+      updateNondeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+      }))
+    }
   }
 
   function handleClearSimulation() {
-    updateDeterministicUiState((currentValue) => ({
-      ...currentValue,
-      isAutoPlaying: false,
-      activeStepIndex: -1,
-      simulationResult: null,
-      inputString: '',
-    }))
+    if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+      updateDeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+        simulationResult: null,
+        inputString: '',
+      }))
+    }
+    if (selectedAutomatonType === 'nondeterministicFiniteAutomaton') {
+      updateNondeterministicUiState((currentValue) => ({
+        ...currentValue,
+        isAutoPlaying: false,
+        activeStepIndex: -1,
+        simulationResult: null,
+        inputString: '',
+      }))
+    }
   }
 
   return (
@@ -446,7 +602,7 @@ function App() {
             {selectedAutomatonType === 'deterministicFiniteAutomaton'
               ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> target`'
               : selectedAutomatonType === 'nondeterministicFiniteAutomaton'
-                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB` (epsilon accepted as `eps`, `epsilon`, or `ε`).'
+                ? 'Format: `states`, `alphabet`, `start`, `accept`, then `transitions`. Transition syntax: `source,symbol -> targetA|targetB` (epsilon accepted as `e`, `eps`, `epsilon`, or `ε`).'
                 : `The ${selectedOption.label} parser format is not implemented yet.`}
           </p>
           <textarea
@@ -466,20 +622,38 @@ function App() {
             transferErrorDetails={transferErrorDetails}
           />
 
-          {selectedAutomatonType === 'deterministicFiniteAutomaton' && (
+          {(selectedAutomatonType === 'deterministicFiniteAutomaton' ||
+            selectedAutomatonType === 'nondeterministicFiniteAutomaton') && (
             <SimulationControls
               inputString={inputString}
               onInputChange={(value) => {
-                updateDeterministicUiState((currentValue) => ({
-                  ...currentValue,
-                  inputString: value,
-                  simulationResult: null,
-                  activeStepIndex: -1,
-                  isAutoPlaying: false,
-                }))
+                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+                  updateDeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (
+                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                ) {
+                  updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    inputString: value,
+                    simulationResult: null,
+                    activeStepIndex: -1,
+                    isAutoPlaying: false,
+                  }))
+                }
               }}
               onRun={handleRunSimulation}
-              canRun={Boolean(deterministicParseResult?.value)}
+              canRun={Boolean(
+                selectedAutomatonType === 'deterministicFiniteAutomaton'
+                  ? deterministicParseResult?.value
+                  : nondeterministicParseResult?.value,
+              )}
               onResetProgress={handleResetSimulationProgress}
               onClear={handleClearSimulation}
               disableResetProgress={
@@ -492,7 +666,7 @@ function App() {
                 activeStepIndex < 0 &&
                 !isAutoPlaying
               }
-              parseErrors={deterministicParseResult?.errors ?? []}
+              parseErrors={activeParseErrors}
             />
           )}
         </div>
@@ -502,7 +676,7 @@ function App() {
           {selectedOption.supported && graphMachine ? (
             <AutomatonGraph
               machine={graphMachine}
-              currentState={activeState}
+              currentStates={activeStates}
               traversedStates={traversedStates}
               traversedTransitionKeys={traversedTransitionKeys}
               activeTransitionKey={activeTransitionKey}
@@ -541,30 +715,60 @@ function App() {
               simulationResult={simulationResult}
               activeStepIndex={activeStepIndex}
               totalTraceSteps={totalTraceSteps}
-              activeState={activeState}
+              activeStateLabel={activeStateLabel}
               canStepBackward={canStepBackward}
               canStepForward={canStepForward}
               canAutoPlay={canAutoPlay}
               isAutoPlaying={isAutoPlaying}
-              onPrevious={() =>
-                updateDeterministicUiState((currentValue) => ({
-                  ...currentValue,
-                  activeStepIndex: currentValue.activeStepIndex - 1,
-                }))
-              }
-              onNext={() =>
-                updateDeterministicUiState((currentValue) => ({
-                  ...currentValue,
-                  activeStepIndex: currentValue.activeStepIndex + 1,
-                }))
-              }
+              onPrevious={() => {
+                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+                  updateDeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex - 1,
+                  }))
+                }
+                if (
+                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                ) {
+                  updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex - 1,
+                  }))
+                }
+              }}
+              onNext={() => {
+                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+                  updateDeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex + 1,
+                  }))
+                }
+                if (
+                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                ) {
+                  updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    activeStepIndex: currentValue.activeStepIndex + 1,
+                  }))
+                }
+              }}
               onAutoPlay={handleStartAutoPlay}
-              onPause={() =>
-                updateDeterministicUiState((currentValue) => ({
-                  ...currentValue,
-                  isAutoPlaying: false,
-                }))
-              }
+              onPause={() => {
+                if (selectedAutomatonType === 'deterministicFiniteAutomaton') {
+                  updateDeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    isAutoPlaying: false,
+                  }))
+                }
+                if (
+                  selectedAutomatonType === 'nondeterministicFiniteAutomaton'
+                ) {
+                  updateNondeterministicUiState((currentValue) => ({
+                    ...currentValue,
+                    isAutoPlaying: false,
+                  }))
+                }
+              }}
               onReset={handleResetSimulationProgress}
             />
           )}

@@ -1,4 +1,7 @@
-import type { DeterministicSimulationResult } from './automaton'
+import type {
+  DeterministicSimulationResult,
+  NondeterministicSimulationResult,
+} from './automaton'
 
 export type AutomatonType =
   | 'deterministicFiniteAutomaton'
@@ -21,13 +24,21 @@ export interface DeterministicUiState {
   isAutoPlaying: boolean
 }
 
+export interface NondeterministicUiState {
+  definitionText: string
+  inputString: string
+  simulationResult: NondeterministicSimulationResult | null
+  activeStepIndex: number
+  isAutoPlaying: boolean
+}
+
 export interface PlannedUiState {
   definitionText: string
 }
 
 export type UiStateByType = {
   deterministicFiniteAutomaton: DeterministicUiState
-  nondeterministicFiniteAutomaton: PlannedUiState
+  nondeterministicFiniteAutomaton: NondeterministicUiState
   pushdownAutomaton: PlannedUiState
   queueAutomaton: PlannedUiState
   turingMachine: PlannedUiState
@@ -37,4 +48,5 @@ export interface PersistedUiConfig {
   selectedAutomatonType: AutomatonType
   definitionsByType: Record<AutomatonType, string>
   deterministicInputString: string
+  nondeterministicInputString: string
 }
