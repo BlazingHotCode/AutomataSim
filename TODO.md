@@ -48,7 +48,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
   - 3.2.1 validation (valid start state, transitions, alphabet)
   - 3.2.2 `simulateDFA(automaton, input)` for Deterministic Finite Automaton simulation
   - 3.2.3 optional `simulateNFA` for Nondeterministic Finite Automaton simulation (deferred until scope expands)
-- [ ] Add unit tests for engine behavior:
+- [x] Add unit tests for engine behavior:
   - 3.3.1 accepts valid strings
   - 3.3.2 rejects invalid strings
   - 3.3.3 handles missing transitions safely
@@ -89,6 +89,7 @@ Use this as a step-by-step build plan. Check items off as you complete them.
 - [ ] Add CI checks (build + lint + test) on pull requests.
 - [ ] Enforce formatting/lint consistency (ESLint already present; add Prettier if desired).
 - [ ] Add lightweight error boundary for runtime UI crashes.
+- [ ] Refactor code into modular, reusable units (components, parsing utilities, simulation hooks, shared types).
 
 ## 8. GitHub Pages Deploy Hardening
 
