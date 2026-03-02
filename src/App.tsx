@@ -83,6 +83,8 @@ type UiStateByType = {
   turingMachine: PlannedUiState
 }
 
+const LOCAL_STORAGE_KEY = 'automatasim:ui-state:v1'
+
 function getConnectionAwareStatePositions(
   machine: DeterministicFiniteAutomaton,
 ) {
@@ -781,27 +783,124 @@ function AutomatonGraph({
 }
 
 function App() {
+  function getDefaultUiStateByType(): UiStateByType {
+    return {
+      deterministicFiniteAutomaton: {
+        definitionText: DETERMINISTIC_SAMPLE,
+        inputString: '',
+        simulationResult: null,
+        activeStepIndex: -1,
+        isAutoPlaying: false,
+      },
+      nondeterministicFiniteAutomaton: {
+        definitionText: FUTURE_TEMPLATE,
+      },
+      pushdownAutomaton: {
+        definitionText: FUTURE_TEMPLATE,
+      },
+      queueAutomaton: {
+        definitionText: FUTURE_TEMPLATE,
+      },
+      turingMachine: {
+        definitionText: FUTURE_TEMPLATE,
+      },
+    }
+  }
+
+  function loadPersistedUiConfig(): {
+    selectedAutomatonType: AutomatonType
+    definitionsByType: Record<AutomatonType, string>
+    deterministicInputString: string
+  } | null {
+    if (typeof window === 'undefined') {
+      return null
+    }
+
+    try {
+      const rawValue = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+      if (!rawValue) {
+        return null
+      }
+
+      const parsed = JSON.parse(rawValue) as {
+        selectedAutomatonType?: unknown
+        definitionsByType?: Partial<Record<AutomatonType, unknown>>
+        deterministicInputString?: unknown
+      }
+      const maybeType = parsed.selectedAutomatonType
+      const validType = AUTOMATON_OPTIONS.some((option) => option.id === maybeType)
+      if (!validType) {
+        return null
+      }
+
+      const fallbackDefinitions = getDefaultUiStateByType()
+      const persistedDefinitions = parsed.definitionsByType ?? {}
+
+      return {
+        selectedAutomatonType: maybeType as AutomatonType,
+        definitionsByType: {
+          deterministicFiniteAutomaton:
+            typeof persistedDefinitions.deterministicFiniteAutomaton === 'string'
+              ? persistedDefinitions.deterministicFiniteAutomaton
+              : fallbackDefinitions.deterministicFiniteAutomaton.definitionText,
+          nondeterministicFiniteAutomaton:
+            typeof persistedDefinitions.nondeterministicFiniteAutomaton === 'string'
+              ? persistedDefinitions.nondeterministicFiniteAutomaton
+              : fallbackDefinitions.nondeterministicFiniteAutomaton.definitionText,
+          pushdownAutomaton:
+            typeof persistedDefinitions.pushdownAutomaton === 'string'
+              ? persistedDefinitions.pushdownAutomaton
+              : fallbackDefinitions.pushdownAutomaton.definitionText,
+          queueAutomaton:
+            typeof persistedDefinitions.queueAutomaton === 'string'
+              ? persistedDefinitions.queueAutomaton
+              : fallbackDefinitions.queueAutomaton.definitionText,
+          turingMachine:
+            typeof persistedDefinitions.turingMachine === 'string'
+              ? persistedDefinitions.turingMachine
+              : fallbackDefinitions.turingMachine.definitionText,
+        },
+        deterministicInputString:
+          typeof parsed.deterministicInputString === 'string'
+            ? parsed.deterministicInputString
+            : '',
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const [persistedUiConfig] = useState(loadPersistedUiConfig)
   const [selectedAutomatonType, setSelectedAutomatonType] =
-    useState<AutomatonType>('deterministicFiniteAutomaton')
+    useState<AutomatonType>(
+      persistedUiConfig?.selectedAutomatonType ?? 'deterministicFiniteAutomaton',
+    )
   const [uiStateByType, setUiStateByType] = useState<UiStateByType>({
     deterministicFiniteAutomaton: {
-      definitionText: DETERMINISTIC_SAMPLE,
-      inputString: '',
+      definitionText:
+        persistedUiConfig?.definitionsByType.deterministicFiniteAutomaton ??
+        DETERMINISTIC_SAMPLE,
+      inputString: persistedUiConfig?.deterministicInputString ?? '',
       simulationResult: null,
       activeStepIndex: -1,
       isAutoPlaying: false,
     },
     nondeterministicFiniteAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText:
+        persistedUiConfig?.definitionsByType.nondeterministicFiniteAutomaton ??
+        FUTURE_TEMPLATE,
     },
     pushdownAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText:
+        persistedUiConfig?.definitionsByType.pushdownAutomaton ?? FUTURE_TEMPLATE,
     },
     queueAutomaton: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText:
+        persistedUiConfig?.definitionsByType.queueAutomaton ?? FUTURE_TEMPLATE,
     },
     turingMachine: {
-      definitionText: FUTURE_TEMPLATE,
+      definitionText:
+        persistedUiConfig?.definitionsByType.turingMachine ?? FUTURE_TEMPLATE,
     },
   })
 
@@ -968,6 +1067,32 @@ function App() {
 
     return () => window.clearTimeout(timer)
   }, [activeStepIndex, isAutoPlaying, simulationResult])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const payload = {
+      selectedAutomatonType,
+      definitionsByType: {
+        deterministicFiniteAutomaton:
+          uiStateByType.deterministicFiniteAutomaton.definitionText,
+        nondeterministicFiniteAutomaton:
+          uiStateByType.nondeterministicFiniteAutomaton.definitionText,
+        pushdownAutomaton: uiStateByType.pushdownAutomaton.definitionText,
+        queueAutomaton: uiStateByType.queueAutomaton.definitionText,
+        turingMachine: uiStateByType.turingMachine.definitionText,
+      },
+      deterministicInputString: uiStateByType.deterministicFiniteAutomaton.inputString,
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload))
+    } catch {
+      // Ignore storage failures (private mode/quota limits).
+    }
+  }, [selectedAutomatonType, uiStateByType])
 
   function handleStartAutoPlay() {
     if (!canAutoPlay) {
